@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Negocios — FCA</title>
+<style>
+  :root {
+    --ink: #0d1117;
+    --ink2: #1c2333;
+    --paper: #f7f6f2;
+    --rule: #e2ddd6;
+    --accent: #1a4fd6;
+    --accent2: #0e3199;
+    --gold: #c8960c;
+    --green: #0f7b45;
+    --red: #c0392b;
+    --muted: #6b7080;
+    --card: #ffffff;
+    --badge-1: #f0c040;
+    --badge-2: #b0b8c1;
+    --badge-3: #c97b3a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    border-bottom: 3px solid var(--accent);
+  }
+  header .brand { font-size: 1.1rem; font-weight: bold; letter-spacing: 0.05em; }
+  header .brand span { color: var(--gold); }
+  header .subtitle { font-size: 0.75rem; color: #aaa; font-family: 'Arial', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+  .admin-badge { background: var(--gold); color: var(--ink); font-size: 0.7rem; font-family: Arial, sans-serif; padding: 2px 8px; border-radius: 3px; font-weight: bold; letter-spacing: 0.05em; }
+
+  /* TABS */
+  .tab-bar { background: var(--ink2); display: flex; gap: 0; border-bottom: 2px solid var(--accent); }
+  .tab { padding: 12px 22px; color: #aaa; font-family: Arial, sans-serif; font-size: 0.82rem; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .tab.active { color: #fff; border-bottom-color: var(--gold); background: rgba(26,79,214,0.15); }
+  .tab.admin-only { color: #c8960c88; }
+  .tab.admin-only.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* MAIN */
+  .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .card-title { font-size: 1rem; font-weight: bold; margin-bottom: 1rem; color: var(--ink); border-bottom: 1px solid var(--rule); padding-bottom: 0.5rem; letter-spacing: 0.02em; }
+
+  /* FORMS */
+  label { display: block; font-family: Arial, sans-serif; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  input, select { width: 100%; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 4px; font-size: 0.95rem; font-family: Georgia, serif; background: #fafaf8; color: var(--ink); margin-bottom: 1rem; transition: border 0.2s; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .btn { display: inline-block; padding: 10px 24px; border: none; border-radius: 4px; font-family: Arial, sans-serif; font-size: 0.85rem; font-weight: bold; cursor: pointer; letter-spacing: 0.05em; text-transform: uppercase; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-gold { background: var(--gold); color: var(--ink); }
+  .btn-gold:hover { background: #a87b0a; }
+  .btn-danger { background: var(--red); color: #fff; font-size: 0.75rem; padding: 5px 12px; }
+  .btn-sm { padding: 5px 14px; font-size: 0.75rem; }
+
+  /* RANKING */
+  .ranking-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 0.85rem; }
+  .ranking-table th { background: var(--ink); color: #fff; padding: 10px 12px; text-align: left; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .ranking-table td { padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  .ranking-table tr:hover td { background: #f0ede8; }
+  .rank-num { font-weight: bold; font-size: 1.1rem; width: 36px; text-align: center; }
+  .rank-1 { color: var(--badge-1); }
+  .rank-2 { color: var(--badge-2); }
+  .rank-3 { color: var(--badge-3); }
+  .score-bar-wrap { background: var(--rule); border-radius: 10px; height: 8px; width: 100%; min-width: 80px; }
+  .score-bar { background: var(--accent); height: 8px; border-radius: 10px; transition: width 0.6s ease; }
+  .product-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.72rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tag-lavadora { background: #dbeafe; color: #1e40af; }
+  .tag-cocina { background: #fef3c7; color: #92400e; }
+  .tag-nevera { background: #d1fae5; color: #065f46; }
+  .tag-secadora { background: #ede9fe; color: #5b21b6; }
+
+  /* ESTADO FINANCIERO */
+  .fin-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 0.85rem; }
+  .fin-table td, .fin-table th { padding: 7px 12px; border-bottom: 1px solid var(--rule); }
+  .fin-table .total-row td { font-weight: bold; background: #f0ede8; border-top: 2px solid var(--rule); }
+  .fin-table .section-header td { background: var(--ink); color: #fff; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .positive { color: var(--green); font-weight: bold; }
+  .negative { color: var(--red); font-weight: bold; }
+
+  /* METRICS */
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .metric-card { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem 1.2rem; border-left: 4px solid var(--accent); }
+  .metric-label { font-family: Arial, sans-serif; font-size: 0.72rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 4px; }
+  .metric-value { font-size: 1.4rem; font-weight: bold; color: var(--ink); }
+  .metric-sub { font-size: 0.78rem; color: var(--muted); font-family: Arial, sans-serif; }
+
+  /* ALERTS */
+  .alert { padding: 12px 16px; border-radius: 4px; font-family: Arial, sans-serif; font-size: 0.85rem; margin-bottom: 1rem; }
+  .alert-success { background: #d1fae5; color: #065f46; border-left: 4px solid var(--green); }
+  .alert-warning { background: #fef3c7; color: #92400e; border-left: 4px solid var(--gold); }
+  .alert-error { background: #fee2e2; color: #991b1b; border-left: 4px solid var(--red); }
+
+  /* LIVE badge */
+  .live-dot { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+  .live-label { font-family: Arial, sans-serif; font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* STUDENT VIEW */
+  .step-indicator { display: flex; gap: 0; margin-bottom: 2rem; }
+  .step { flex: 1; padding: 10px; text-align: center; font-family: Arial, sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 3px solid var(--rule); transition: all 0.2s; }
+  .step.active-step { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; }
+  .step.done-step { color: var(--green); border-bottom-color: var(--green); }
+
+  .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 5px; padding: 1rem 1.2rem; font-family: Arial, sans-serif; font-size: 0.83rem; color: #1e40af; margin-bottom: 1rem; }
+  .info-box strong { display: block; margin-bottom: 4px; font-size: 0.85rem; }
+
+  /* PASSWORD */
+  .login-wrap { max-width: 400px; margin: 4rem auto; }
+  .login-title { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .login-sub { font-family: Arial, sans-serif; color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+  /* ADMIN TABLE */
+  .admin-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 0.82rem; }
+  .admin-table th { background: var(--ink2); color: #ccc; padding: 8px 10px; text-align: left; font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+  .admin-table td { padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+  .admin-table tr:hover td { background: #f5f3ef; }
+  .edit-input { width: 80px; padding: 4px 6px; font-size: 0.82rem; border: 1px solid var(--accent); border-radius: 3px; }
+
+  .hidden { display: none; }
+
+  /* RESPONSIVE */
+  @media(max-width: 640px) {
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .tab { padding: 10px 12px; font-size: 0.72rem; }
+    header { flex-wrap: wrap; height: auto; padding: 12px 1rem; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">FCA <span>SIMULADOR</span> DE NEGOCIOS</div>
+    <div class="subtitle">Toma de Decisiones Empresariales · 2025</div>
+  </div>
+  <div id="headerRight">
+    <span id="adminBadge" class="admin-badge hidden">★ DOCENTE</span>
+  </div>
+</header>
+
+<div class="tab-bar" id="tabBar">
+  <div class="tab active" data-tab="ranking" onclick="switchTab('ranking')">🏆 Ranking</div>
+  <div class="tab" data-tab="student" onclick="switchTab('student')">📋 Mi Decisión</div>
+  <div class="tab admin-only hidden" data-tab="admin" onclick="switchTab('admin')">⚙️ Administración</div>
+  <div class="tab admin-only hidden" data-tab="login" onclick="switchTab('login')">🔐 Docente</div>
+</div>
+
+<!-- =========== RANKING PAGE =========== -->
+<div id="page-ranking" class="page main active">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size:1.6rem;">Ranking en Tiempo Real</h1>
+      <div class="live-label"><span class="live-dot"></span>Actualización automática cada 10s</div>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <select id="filterProduct" onchange="renderRanking()" style="width:auto; margin:0; font-size:0.85rem; padding:7px 10px;">
+        <option value="">Todos los productos</option>
+        <option value="Lavadora">Lavadora</option>
+        <option value="Cocina">Cocina</option>
+        <option value="Nevera">Nevera</option>
+        <option value="Secadora">Secadora</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="metrics-grid" id="metricsBar"></div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="ranking-table" id="rankTable">
+      <thead>
+        <tr>
+          <th style="width:50px;">#</th>
+          <th>Estudiante</th>
+          <th>Producto</th>
+          <th>Producción/día</th>
+          <th>Trabajadores</th>
+          <th>Puntuación</th>
+          <th style="min-width:120px;">Desempeño</th>
+        </tr>
+      </thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========== STUDENT PAGE =========== -->
+<div id="page-student" class="page main">
+  <h1 style="font-size:1.5rem; margin-bottom:0.3rem;">Mi Toma de Decisiones</h1>
+  <p style="font-family:Arial,sans-serif; font-size:0.85rem; color:var(--muted); margin-bottom:1.5rem;">Completa cada sección. El sistema calculará tu puntaje automáticamente.</p>
+
+  <div id="studentAlert"></div>
+
+  <!-- STEP 1: IDENTIFICACIÓN -->
+  <div class="card" id="step1Card">
+    <div class="card-title">① Identificación</div>
+    <div class="form-row">
+      <div>
+        <label>Apellidos</label>
+        <input type="text" id="sApellidos" placeholder="APELLIDOS EN MAYÚSCULAS" oninput="checkIdentidad()">
+      </div>
+      <div>
+        <label>Nombres</label>
+        <input type="text" id="sNombres" placeholder="Nombres completos" oninput="checkIdentidad()">
+      </div>
+    </div>
+    <div id="identStatus"></div>
+  </div>
+
+  <!-- STEP 2: DECISIÓN PRINCIPAL -->
+  <div class="card" id="step2Card">
+    <div class="card-title">② Decisión de Producción</div>
+
+    <div class="form-row">
+      <div>
+        <label>Producto a fabricar</label>
+        <select id="sProducto" onchange="updateProductInfo(); calcScore()">
+          <option value="">— Selecciona —</option>
+          <option value="Lavadora">Lavadora</option>
+          <option value="Cocina">Cocina</option>
+          <option value="Nevera">Nevera</option>
+          <option value="Secadora">Secadora</option>
+        </select>
+      </div>
+      <div>
+        <label>Cantidad a producir (diario)</label>
+        <input type="number" id="sCantidad" min="1" max="200" placeholder="ej. 80" oninput="calcScore()">
+      </div>
+    </div>
+
+    <div id="productInfoBox" class="info-box hidden"></div>
+
+    <div class="form-row-3">
+      <div>
+        <label>N° de trabajadores</label>
+        <input type="number" id="sTrabajadores" min="1" max="100" placeholder="ej. 40" oninput="calcScore()">
+      </div>
+      <div>
+        <label>Kits de materia prima (diario)</label>
+        <input type="number" id="sKits" min="1" max="500" placeholder="ej. 80" oninput="calcScore()">
+      </div>
+      <div>
+        <label>Días laborales / mes</label>
+        <input type="number" id="sDias" min="15" max="30" value="20" oninput="calcScore()">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: LOGÍSTICA -->
+  <div class="card" id="step3Card">
+    <div class="card-title">③ Logística y Recursos</div>
+    <div class="form-row">
+      <div>
+        <label>Ubicación de Bodega</label>
+        <select id="sBodega" onchange="calcScore()">
+          <option value="">— Selecciona —</option>
+          <option value="Guayaquil">Guayaquil (Malecón 2000, 600m²)</option>
+          <option value="Duran">Durán (Abel Gilbert, 500m²)</option>
+          <option value="Daule">Daule (Km 15, 600m²)</option>
+          <option value="Samborondon">Samborondón (Km 20, 800m²)</option>
+        </select>
+      </div>
+      <div>
+        <label>Flota Vehicular</label>
+        <select id="sFlota" onchange="calcScore()">
+          <option value="">— Selecciona —</option>
+          <option value="Flota 1">Flota 1 (2020 · 13 vehículos · $350,000)</option>
+          <option value="Flota 2">Flota 2 (2018 · 15 vehículos · $280,000)</option>
+          <option value="Flota 3">Flota 3 (2024 · 12 vehículos · $380,000)</option>
+          <option value="Flota 4">Flota 4 (2021 · 12 vehículos · $330,000)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label>Edificio Administrativo</label>
+        <select id="sEdificio" onchange="calcScore()">
+          <option value="">— Selecciona —</option>
+          <option value="Guayaquil">FCA Guayaquil ($1,340,000)</option>
+          <option value="Duran">FCA Durán ($940,000)</option>
+          <option value="Daule">FCA Daule ($1,470,000)</option>
+          <option value="Samborondon">FCA Samborondón ($2,100,000)</option>
+        </select>
+      </div>
+      <div>
+        <label>Estrategia de Producción</label>
+        <select id="sEstrategia" onchange="calcScore()">
+          <option value="">— Selecciona —</option>
+          <option value="Economia">Economía de Escala</option>
+          <option value="Diferenciacion">Diferenciación</option>
+          <option value="Segmentacion">Segmentación</option>
+          <option value="EconomiaDif">Economía de Escala + Diferenciación</option>
+          <option value="EconomiasSeg">Economía de Escala + Segmentación</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: ESTADOS FINANCIEROS -->
+  <div class="card" id="step4Card">
+    <div class="card-title">④ Inversión: Marketing & I+D</div>
+    <div class="info-box">
+      <strong>Regla: Marketing% + I+D% debe sumar entre 50% y 100% del presupuesto disponible.</strong>
+      La distribución afecta tu puntaje. Un balance estratégico es clave.
+    </div>
+    <div class="form-row-3">
+      <div>
+        <label>% Marketing</label>
+        <input type="number" id="sMarketing" min="0" max="100" placeholder="ej. 40" oninput="calcScore(); updateMixBar()">
+      </div>
+      <div>
+        <label>% I+D</label>
+        <input type="number" id="sID" min="0" max="100" placeholder="ej. 60" oninput="calcScore(); updateMixBar()">
+      </div>
+      <div>
+        <label>% Préstamo solicitado</label>
+        <select id="sPrestamo" onchange="calcScore()">
+          <option value="">—</option>
+          <option value="0.05">5%</option>
+          <option value="0.10">10%</option>
+          <option value="0.15">15%</option>
+          <option value="0.20">20%</option>
+        </select>
+      </div>
+    </div>
+    <div id="mixBar" style="margin-bottom:1rem;"></div>
+    <div>
+      <label>Valor Total de Activos ($)</label>
+      <input type="number" id="sActivos" min="0" placeholder="ej. 2500000" oninput="calcScore()">
+    </div>
+  </div>
+
+  <!-- SCORE PREVIEW -->
+  <div class="card" id="scorePreview" style="border-left: 4px solid var(--accent);">
+    <div class="card-title">Vista Previa de Puntaje</div>
+    <div id="scoreBreakdown"></div>
+  </div>
+
+  <!-- FINANCIAL STATEMENTS -->
+  <div class="card" id="finCard">
+    <div class="card-title">Estado de Situación Inicial (Auto-calculado)</div>
+    <table class="fin-table" id="finTable"></table>
+  </div>
+
+  <div style="text-align:right; margin-top:1rem;">
+    <button class="btn btn-primary" onclick="submitDecision()">✓ Enviar mi Decisión</button>
+  </div>
+</div>
+
+<!-- =========== ADMIN PAGE =========== -->
+<div id="page-admin" class="page main">
+  <h1 style="font-size:1.5rem; margin-bottom:0.3rem;">Panel del Docente</h1>
+  <p style="font-family:Arial,sans-serif; font-size:0.85rem; color:var(--muted); margin-bottom:1.5rem;">Solo tú puedes ver y editar los puntajes de todos los estudiantes.</p>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div style="padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <strong>Decisiones registradas: <span id="adminCount">0</span></strong>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sm btn-gold" onclick="exportCSV()">↓ Exportar CSV</button>
+        <button class="btn btn-sm btn-danger" onclick="clearAll()">🗑 Limpiar Todo</button>
+      </div>
+    </div>
+    <table class="admin-table" id="adminTable">
+      <thead>
+        <tr>
+          <th>Estudiante</th>
+          <th>Producto</th>
+          <th>Producción/día</th>
+          <th>Trabajadores</th>
+          <th>Bodega</th>
+          <th>Estrategia</th>
+          <th>Marketing%</th>
+          <th>I+D%</th>
+          <th>Puntaje</th>
+          <th>Ajuste Docente</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="adminBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========== LOGIN PAGE =========== -->
+<div id="page-login" class="page main">
+  <div class="login-wrap">
+    <div class="card">
+      <div class="login-title">Acceso Docente</div>
+      <div class="login-sub">Ingresa la contraseña para acceder al panel de administración.</div>
+      <label>Contraseña</label>
+      <input type="password" id="pwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Ingresar</button>
+      <div id="loginError" style="color:var(--red); font-family:Arial,sans-serif; font-size:0.82rem; margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// DATA & STATE
+// ============================================
+
+const ADMIN_PASSWORD = "fca2025docente";
+
+// Product reference data from the Excel
+const PRODUCTS = {
+  "Lavadora": { minQty: 40, maxQty: 80, costoProd: { below: 89, atOrAbove: 90 }, threshold: 40, personal: 25, anual: 12000, puntoPrecio: 7 },
+  "Cocina":   { minQty: 80, maxQty: 120, costoProd: { below: 44, atOrAbove: 45 }, threshold: 80, personal: 40, anual: 24000, puntoPrecio: 5 },
+  "Nevera":   { minQty: 50, maxQty: 90, costoProd: { below: 74, atOrAbove: 75 }, threshold: 50, personal: 40, anual: 12740, puntoPrecio: 6 },
+  "Secadora": { minQty: 40, maxQty: 80, costoProd: { below: 88, atOrAbove: 90 }, threshold: 40, personal: 40, anual: 12800, puntoPrecio: 8 }
+};
+
+const BODEGA_SCORES = { "Guayaquil": 5, "Duran": 10, "Daule": 10, "Samborondon": 10 };
+const BODEGA_COSTOS = { "Guayaquil": 3500, "Duran": 3400, "Daule": 3400, "Samborondon": 3600 };
+const FLOTA_SCORES = { "Flota 1": 10, "Flota 2": 10, "Flota 3": 5, "Flota 4": 5 };
+const FLOTA_COSTOS = { "Flota 1": 350000, "Flota 2": 280000, "Flota 3": 380000, "Flota 4": 330000 };
+const EDIFICIO_COSTOS = { "Guayaquil": 1340000, "Duran": 940000, "Daule": 1470000, "Samborondon": 2100000 };
+const ESTRATEGIA_SCORES = { "Economia": 3, "Diferenciacion": 3, "Segmentacion": 3, "EconomiaDif": 2, "EconomiasSeg": 2 };
+const MO_TOTAL = 33488; // Monthly labor cost from Excel
+
+let decisions = [];
+let adminMode = false;
+
+// Load from storage
+async function loadData() {
+  try {
+    const r = await window.storage.get('sim-decisions');
+    if (r && r.value) decisions = JSON.parse(r.value);
+  } catch(e) { decisions = []; }
+}
+
+async function saveData() {
+  try {
+    await window.storage.set('sim-decisions', JSON.stringify(decisions));
+  } catch(e) {}
+}
+
+// ============================================
+// SCORING ENGINE
+// ============================================
+
+function calcScoreFromData(d) {
+  let score = 0;
+  let breakdown = {};
+
+  // 1. Producto
+  const prod = PRODUCTS[d.producto];
+  if (prod) {
+    breakdown.producto = prod.puntoPrecio;
+    score += prod.puntoPrecio;
+  } else { breakdown.producto = 0; }
+
+  // 2. Bodega (ubicación)
+  const bodegaScore = BODEGA_SCORES[d.bodega] || 0;
+  breakdown.bodega = bodegaScore;
+  score += bodegaScore;
+
+  // 3. Estrategia
+  const estratScore = ESTRATEGIA_SCORES[d.estrategia] || 2;
+  breakdown.estrategia = estratScore;
+  score += estratScore;
+
+  // 4. Cantidad producida
+  let cantScore = 0;
+  if (prod && d.cantidad) {
+    if (d.cantidad >= prod.threshold) cantScore = 10;
+    else if (d.cantidad >= prod.threshold * 0.75) cantScore = 5;
+    else cantScore = 2;
+  }
+  breakdown.cantidad = cantScore;
+  score += cantScore;
+
+  // 5. Flota
+  const flotaScore = FLOTA_SCORES[d.flota] || 5;
+  breakdown.flota = flotaScore;
+  score += flotaScore;
+
+  // 6. Cercanía edificio-bodega
+  let cercScore = 0;
+  if (d.bodega && d.edificio) {
+    if (d.bodega === d.edificio) cercScore = 5;
+    else if ((d.bodega === "Daule" && d.edificio === "Duran") || (d.bodega === "Duran" && d.edificio === "Daule")) cercScore = 3;
+    else cercScore = 2;
+  }
+  breakdown.cercania = cercScore;
+  score += cercScore;
+
+  // 7. Ajuste docente
+  if (d.ajusteDocente) {
+    breakdown.ajuste = d.ajusteDocente;
+    score += d.ajusteDocente;
+  } else { breakdown.ajuste = 0; }
+
+  return { total: score, breakdown };
+}
+
+// ============================================
+// UI: RANKING
+// ============================================
+
+function renderRanking() {
+  const filter = document.getElementById('filterProduct')?.value || '';
+  let data = decisions.filter(d => !filter || d.producto === filter);
+
+  // Calculate live scores
+  data = data.map(d => ({ ...d, ...calcScoreFromData(d) }));
+  data.sort((a, b) => b.total - a.total);
+
+  const maxScore = data.length ? data[0].total : 1;
+
+  // Metrics
+  const metricsBar = document.getElementById('metricsBar');
+  const counts = { Lavadora: 0, Cocina: 0, Nevera: 0, Secadora: 0 };
+  decisions.forEach(d => { if (counts[d.producto] !== undefined) counts[d.producto]++; });
+  metricsBar.innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total Participantes</div>
+      <div class="metric-value">${decisions.length}</div>
+    </div>
+    <div class="metric-card" style="border-left-color:#1e40af">
+      <div class="metric-label">Lavadoras</div>
+      <div class="metric-value">${counts.Lavadora}</div>
+    </div>
+    <div class="metric-card" style="border-left-color:#92400e">
+      <div class="metric-label">Cocinas</div>
+      <div class="metric-value">${counts.Cocina}</div>
+    </div>
+    <div class="metric-card" style="border-left-color:#065f46">
+      <div class="metric-label">Neveras</div>
+      <div class="metric-value">${counts.Nevera}</div>
+    </div>
+    <div class="metric-card" style="border-left-color:#5b21b6">
+      <div class="metric-label">Secadoras</div>
+      <div class="metric-value">${counts.Secadora}</div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('rankBody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--muted); font-family:Arial,sans-serif;">Aún no hay decisiones registradas.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((d, i) => {
+    const rank = i + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+    const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const tagClass = `tag-${d.producto?.toLowerCase() || 'cocina'}`;
+    const barPct = Math.round((d.total / maxScore) * 100);
+    return `
+      <tr>
+        <td class="rank-num ${rankClass}">${rankIcon}</td>
+        <td><strong>${d.nombre}</strong></td>
+        <td><span class="product-tag ${tagClass}">${d.producto}</span></td>
+        <td>${d.cantidad || '—'}</td>
+        <td>${d.trabajadores || '—'}</td>
+        <td><strong style="font-size:1.1rem;">${d.total}</strong> <span style="color:var(--muted); font-size:0.8rem; font-family:Arial,sans-serif;">pts</span></td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:${barPct}%"></div>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+// ============================================
+// UI: STUDENT FORM
+// ============================================
+
+function updateProductInfo() {
+  const prod = document.getElementById('sProducto').value;
+  const box = document.getElementById('productInfoBox');
+  if (!prod || !PRODUCTS[prod]) { box.classList.add('hidden'); return; }
+  const p = PRODUCTS[prod];
+  box.classList.remove('hidden');
+  box.innerHTML = `<strong>📦 Referencia: ${prod}</strong>
+    Personal necesario: <strong>${p.personal} trabajadores</strong> · 
+    Producción estimada/año: <strong>${p.anual.toLocaleString()} unidades</strong> · 
+    Rango óptimo diario: <strong>${p.minQty}–${p.maxQty} unidades</strong> · 
+    Costo prod. punto equilibrio: $${p.costoProd.below} (< ${p.threshold}) / $${p.costoProd.atOrAbove} (≥ ${p.threshold})`;
+}
+
+function updateMixBar() {
+  const mrk = parseFloat(document.getElementById('sMarketing').value) || 0;
+  const id = parseFloat(document.getElementById('sID').value) || 0;
+  const total = mrk + id;
+  const bar = document.getElementById('mixBar');
+  const color = total === 100 ? 'var(--green)' : total > 100 ? 'var(--red)' : 'var(--accent)';
+  bar.innerHTML = `
+    <div style="display:flex; align-items:center; gap:10px; font-family:Arial,sans-serif; font-size:0.82rem;">
+      <div style="flex:1; background:var(--rule); border-radius:6px; height:10px;">
+        <div style="width:${Math.min(total,100)}%; background:${color}; height:10px; border-radius:6px; transition:width 0.3s;"></div>
+      </div>
+      <span style="color:${color}; font-weight:bold;">${total}% / 100%</span>
+    </div>`;
+}
+
+function calcScore() {
+  const d = getFormData();
+  const { total, breakdown } = calcScoreFromData(d);
+
+  // Financial calc
+  const prod = PRODUCTS[d.producto] || {};
+  const dias = d.dias || 20;
+  const cantidad = d.cantidad || 0;
+  const costoProd = cantidad >= (prod.threshold || 0) ? prod.costoProd?.atOrAbove || 0 : prod.costoProd?.below || 0;
+  const costoProduccionTotal = cantidad * dias * costoProd;
+  const costoMO = MO_TOTAL;
+  const costoFlota = FLOTA_COSTOS[d.flota] || 0;
+  const costoEdificio = EDIFICIO_COSTOS[d.edificio] || 0;
+  const costoBodega = BODEGA_COSTOS[d.bodega] ? BODEGA_COSTOS[d.bodega] * 12 : 0;
+  const totalActivos = parseFloat(d.activos) || 0;
+  const mrk = (parseFloat(d.marketing) || 0) / 100;
+  const id = (parseFloat(d.id) || 0) / 100;
+  const prestamoPct = parseFloat(d.prestamo) || 0;
+  const prestamo = totalActivos * prestamoPct;
+  const mrkValor = totalActivos * mrk;
+  const idValor = totalActivos * id;
+  const totalGastos = costoProduccionTotal + costoMO + mrkValor + idValor;
+  const ingresoEstimado = cantidad * dias * (costoProd * 1.03) * 1.15; // 3% utilidad + 15% IVA
+  const utilidad = ingresoEstimado - totalGastos;
+
+  // Score preview
+  document.getElementById('scoreBreakdown').innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:0.75rem; margin-bottom:1rem;">
+      ${[
+        ['Producto', breakdown.producto, 8],
+        ['Bodega/Ubicación', breakdown.bodega, 10],
+        ['Estrategia', breakdown.estrategia, 3],
+        ['Cant. producida', breakdown.cantidad, 10],
+        ['Flota', breakdown.flota, 10],
+        ['Cercanía', breakdown.cercania, 5],
+      ].map(([label, val, max]) => `
+        <div style="background:#f7f6f2; border-radius:5px; padding:10px; text-align:center;">
+          <div style="font-family:Arial,sans-serif; font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">${label}</div>
+          <div style="font-size:1.2rem; font-weight:bold; color:${val >= max*0.7 ? 'var(--green)' : val > 0 ? 'var(--gold)' : 'var(--muted)'};">${val}<span style="font-size:0.75rem; color:var(--muted)">/${max}</span></div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:1.5rem; font-weight:bold; color:var(--accent); font-family:Arial,sans-serif; text-align:center; padding:12px; background:#eff6ff; border-radius:5px;">
+      PUNTAJE TOTAL: ${total} pts
+    </div>`;
+
+  // Financial table
+  const finTable = document.getElementById('finTable');
+  finTable.innerHTML = `
+    <tr class="section-header"><td colspan="2">ESTADO DE RESULTADOS ESTIMADO (Mensual)</td></tr>
+    <tr><td>Ingreso estimado por ventas</td><td style="text-align:right;">${fmt(ingresoEstimado)}</td></tr>
+    <tr class="section-header"><td colspan="2">COSTOS OPERATIVOS</td></tr>
+    <tr><td>Costo de producción (${cantidad} u/día × ${dias} días × $${costoProd})</td><td style="text-align:right;">${fmt(costoProduccionTotal)}</td></tr>
+    <tr><td>Mano de obra (nómina mensual)</td><td style="text-align:right;">${fmt(costoMO)}</td></tr>
+    <tr><td>Marketing (${d.marketing || 0}% del activo)</td><td style="text-align:right;">${fmt(mrkValor)}</td></tr>
+    <tr><td>I+D (${d.id || 0}% del activo)</td><td style="text-align:right;">${fmt(idValor)}</td></tr>
+    <tr class="section-header"><td colspan="2">ACTIVOS Y FINANCIAMIENTO</td></tr>
+    <tr><td>Flota vehicular</td><td style="text-align:right;">${fmt(costoFlota)}</td></tr>
+    <tr><td>Edificio administrativo</td><td style="text-align:right;">${fmt(costoEdificio)}</td></tr>
+    <tr><td>Alquiler anual de bodega</td><td style="text-align:right;">${fmt(costoBodega)}</td></tr>
+    <tr><td>Préstamo autorizado (${(prestamoPct*100)||0}%)</td><td style="text-align:right; color:var(--green);">+ ${fmt(prestamo)}</td></tr>
+    <tr class="total-row"><td>UTILIDAD / PÉRDIDA ESTIMADA</td><td style="text-align:right;" class="${utilidad >= 0 ? 'positive' : 'negative'}">${fmt(utilidad)}</td></tr>
+  `;
+}
+
+function fmt(n) {
+  if (!n) return '$0';
+  return '$' + Math.round(n).toLocaleString('es-EC');
+}
+
+function getFormData() {
+  return {
+    nombre: (document.getElementById('sApellidos').value.trim() + ' ' + document.getElementById('sNombres').value.trim()).trim(),
+    producto: document.getElementById('sProducto').value,
+    cantidad: parseFloat(document.getElementById('sCantidad').value) || 0,
+    trabajadores: parseFloat(document.getElementById('sTrabajadores').value) || 0,
+    kits: parseFloat(document.getElementById('sKits').value) || 0,
+    dias: parseFloat(document.getElementById('sDias').value) || 20,
+    bodega: document.getElementById('sBodega').value,
+    flota: document.getElementById('sFlota').value,
+    edificio: document.getElementById('sEdificio').value,
+    estrategia: document.getElementById('sEstrategia').value,
+    marketing: document.getElementById('sMarketing').value,
+    id: document.getElementById('sID').value,
+    prestamo: document.getElementById('sPrestamo').value,
+    activos: document.getElementById('sActivos').value,
+    ajusteDocente: 0,
+    timestamp: new Date().toISOString()
+  };
+}
+
+function checkIdentidad() {
+  const nombre = (document.getElementById('sApellidos').value.trim() + ' ' + document.getElementById('sNombres').value.trim()).trim();
+  const exists = decisions.find(d => d.nombre.toLowerCase() === nombre.toLowerCase());
+  const statusEl = document.getElementById('identStatus');
+  if (!nombre || nombre.length < 5) { statusEl.innerHTML = ''; return; }
+  if (exists) {
+    statusEl.innerHTML = `<div class="alert alert-warning">⚠️ Ya existe una decisión registrada con este nombre. Al enviar, <strong>se actualizará</strong> tu registro anterior.</div>`;
+  } else {
+    statusEl.innerHTML = `<div class="alert alert-success">✓ Nuevo participante: <strong>${nombre}</strong></div>`;
+  }
+}
+
+async function submitDecision() {
+  const d = getFormData();
+  if (!d.nombre || d.nombre.length < 5) { alert('Ingresa tu nombre completo.'); return; }
+  if (!d.producto) { alert('Selecciona un producto.'); return; }
+  if (!d.cantidad || d.cantidad < 1) { alert('Ingresa la cantidad a producir.'); return; }
+  if (!d.bodega) { alert('Selecciona una bodega.'); return; }
+
+  const mrk = parseFloat(d.marketing) || 0;
+  const id_ = parseFloat(d.id) || 0;
+  if (mrk + id_ > 100) { alert('La suma de Marketing% + I+D% no puede superar 100%.'); return; }
+
+  // Update or add
+  const idx = decisions.findIndex(x => x.nombre.toLowerCase() === d.nombre.toLowerCase());
+  if (idx >= 0) decisions[idx] = d;
+  else decisions.push(d);
+
+  await saveData();
+  renderRanking();
+  renderAdmin();
+
+  document.getElementById('studentAlert').innerHTML = `<div class="alert alert-success">✅ Decisión registrada exitosamente. Consulta el ranking en tiempo real.</div>`;
+  setTimeout(() => switchTab('ranking'), 2000);
+}
+
+// ============================================
+// UI: ADMIN
+// ============================================
+
+function renderAdmin() {
+  const count = decisions.length;
+  document.getElementById('adminCount').textContent = count;
+
+  const tbody = document.getElementById('adminBody');
+  if (!count) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:1.5rem; color:var(--muted);">Sin registros.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = decisions.map((d, i) => {
+    const { total } = calcScoreFromData(d);
+    return `
+      <tr>
+        <td><strong>${d.nombre}</strong></td>
+        <td><span class="product-tag tag-${d.producto?.toLowerCase()}">${d.producto}</span></td>
+        <td>${d.cantidad}</td>
+        <td>${d.trabajadores}</td>
+        <td>${d.bodega}</td>
+        <td>${d.estrategia}</td>
+        <td>${d.marketing}%</td>
+        <td>${d.id}%</td>
+        <td><strong>${total}</strong></td>
+        <td><input class="edit-input" type="number" id="adj_${i}" value="${d.ajusteDocente || 0}" min="-20" max="20" placeholder="0"></td>
+        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-gold" onclick="applyAdj(${i})">Aplicar</button>
+          <button class="btn btn-danger" onclick="deleteDecision(${i})">✕</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function applyAdj(i) {
+  const val = parseFloat(document.getElementById(`adj_${i}`).value) || 0;
+  decisions[i].ajusteDocente = val;
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+async function deleteDecision(i) {
+  if (!confirm(`¿Eliminar el registro de "${decisions[i].nombre}"?`)) return;
+  decisions.splice(i, 1);
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+async function clearAll() {
+  if (!confirm('¿Eliminar TODOS los registros? Esta acción no se puede deshacer.')) return;
+  decisions = [];
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+function exportCSV() {
+  const headers = ['Nombre','Producto','Cantidad/día','Trabajadores','Bodega','Flota','Edificio','Estrategia','Marketing%','I+D%','Préstamo%','Activos','Ajuste Docente','Puntaje Total','Timestamp'];
+  const rows = decisions.map(d => {
+    const { total } = calcScoreFromData(d);
+    return [d.nombre, d.producto, d.cantidad, d.trabajadores, d.bodega, d.flota, d.edificio, d.estrategia, d.marketing, d.id, d.prestamo, d.activos, d.ajusteDocente || 0, total, d.timestamp].join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'simulador_decisiones.csv'; a.click();
+}
+
+// ============================================
+// AUTH
+// ============================================
+
+function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PASSWORD) {
+    adminMode = true;
+    document.getElementById('adminBadge').classList.remove('hidden');
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    document.getElementById('loginError').textContent = '';
+    switchTab('admin');
+    renderAdmin();
+  } else {
+    document.getElementById('loginError').textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
+  }
+}
+
+// ============================================
+// TAB NAVIGATION
+// ============================================
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.toggle('active', p.id === `page-${name}`);
+  });
+  if (name === 'admin' && !adminMode) { switchTab('login'); return; }
+  if (name === 'ranking') renderRanking();
+  if (name === 'admin') renderAdmin();
+}
+
+// ============================================
+// INIT
+// ============================================
+
+(async function init() {
+  await loadData();
+  renderRanking();
+  // Auto-refresh ranking
+  setInterval(async () => {
+    await loadData();
+    renderRanking();
+    if (adminMode) renderAdmin();
+  }, 10000);
+})();
+</script>
+</body>
+</html>
