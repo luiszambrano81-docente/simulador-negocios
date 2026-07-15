@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UTEGSA SA. | Simulador de Negocios</title>
+<style>
+  :root {
+    --ink: #0d1117;
+    --ink2: #1c2333;
+    --paper: #f7f6f2;
+    --rule: #e2ddd6;
+    --accent: #1a4fd6;
+    --accent2: #0e3199;
+    --gold: #c8960c;
+    --green: #0f7b45;
+    --red: #c0392b;
+    --muted: #6b7080;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+  header {
+    background: var(--ink);
+    color: #fff;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--accent);
+  }
+  header .brand { font-size: 1.1rem; font-weight: bold; }
+  header .brand span { color: var(--gold); }
+  .admin-badge { background: var(--gold); color: var(--ink); font-size: 0.7rem; padding: 4px 10px; border-radius: 3px; font-weight: bold; }
+  .tab-bar { background: var(--ink2); display: flex; gap: 0; border-bottom: 2px solid var(--accent); }
+  .tab { padding: 12px 22px; color: #aaa; font-family: 'Arial', sans-serif; font-size: 0.82rem; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+  .tab:hover { color: #fff; }
+  .tab.active { color: #fff; border-bottom-color: var(--gold); background: rgba(26,79,214,0.15); }
+  .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .card { background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .card-title { font-size: 1rem; font-weight: bold; margin-bottom: 1rem; border-bottom: 1px solid var(--rule); padding-bottom: 0.5rem; }
+  label { display: block; font-family: Arial, sans-serif; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+  input, select { width: 100%; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 4px; font-size: 0.95rem; margin-bottom: 1rem; }
+  .btn { display: inline-block; padding: 10px 24px; border: none; border-radius: 4px; font-family: Arial, sans-serif; font-size: 0.85rem; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-gold { background: var(--gold); color: var(--ink); }
+  .ranking-table { width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 0.85rem; }
+  .ranking-table th { background: var(--ink); color: #fff; padding: 10px; text-align: left; font-size: 0.75rem; text-transform: uppercase; }
+  .ranking-table td { padding: 10px; border-bottom: 1px solid var(--rule); }
+  .ranking-table tr:hover td { background: #f0ede8; }
+  .alert { padding: 12px 16px; border-radius: 4px; font-family: Arial, sans-serif; font-size: 0.85rem; margin-bottom: 1rem; }
+  .alert-success { background: #d1fae5; color: #065f46; border-left: 4px solid var(--green); }
+  .alert-error { background: #fee2e2; color: #991b1b; border-left: 4px solid var(--red); }
+  .hidden { display: none; }
+  h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+  .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 5px; padding: 1rem; font-family: Arial, sans-serif; font-size: 0.83rem; color: #1e40af; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">UTEGSA <span>SA.</span></div>
+    <div style="font-size: 0.75rem; color: #aaa;">Simulador de Negocios • 2025</div>
+  </div>
+  <div id="headerRight">
+    <span id="adminBadge" class="admin-badge hidden">★ DOCENTE</span>
+  </div>
+</header>
+
+<div class="tab-bar" id="tabBar">
+  <div class="tab active" data-tab="ranking" onclick="switchTab('ranking')">🏆 Ranking</div>
+  <div class="tab" data-tab="student" onclick="switchTab('student')">📋 Mi Decisión</div>
+  <div class="tab admin-only hidden" data-tab="admin" onclick="switchTab('admin')">⚙️ Administración</div>
+  <div class="tab admin-only hidden" data-tab="login" onclick="switchTab('login')">🔐 Docente</div>
+</div>
+
+<!-- RANKING PAGE -->
+<div id="page-ranking" class="page main active">
+  <h1>🏆 Ranking en Tiempo Real</h1>
+  <p style="font-family:Arial,sans-serif; font-size:0.85rem; color:var(--muted); margin-bottom:1.5rem;">Actualización automática cada 10 segundos</p>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Estudiante</th>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Escenario</th>
+          <th>Puntuación</th>
+        </tr>
+      </thead>
+      <tbody id="rankBody">
+        <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--muted);">Aún no hay decisiones registradas</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- STUDENT PAGE -->
+<div id="page-student" class="page main">
+  <h1>📋 Mi Toma de Decisiones</h1>
+  <p style="font-family:Arial,sans-serif; font-size:0.85rem; color:var(--muted); margin-bottom:1.5rem;">Completa todas las secciones y envía tu decisión</p>
+  
+  <div id="studentAlert"></div>
+
+  <div class="card">
+    <div class="card-title">① Identificación</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+      <div>
+        <label>Apellidos</label>
+        <input type="text" id="sApellidos" placeholder="APELLIDOS">
+      </div>
+      <div>
+        <label>Nombres</label>
+        <input type="text" id="sNombres" placeholder="Nombres">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">② Decisión de Producción</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+      <div>
+        <label>Producto</label>
+        <select id="sProducto">
+          <option value="">Selecciona</option>
+          <option value="Lavadora">Lavadora</option>
+          <option value="Cocina">Cocina</option>
+          <option value="Nevera">Nevera</option>
+          <option value="Secadora">Secadora</option>
+        </select>
+      </div>
+      <div>
+        <label>Cantidad a producir (diario)</label>
+        <input type="number" id="sCantidad" placeholder="ej. 80">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">③ Escenario Operativo — Taller 3</div>
+    <div class="info-box">
+      <strong>⚠️ CRISIS: Ruptura de Suministro (65% kits) + Racionamiento Eléctrico (14:00-18:00)</strong>
+    </div>
+    
+    <div style="display:grid; grid-template-columns:1fr; gap:1rem;">
+      <label style="display:flex; align-items:center; cursor:pointer; margin-bottom:0.5rem;">
+        <input type="radio" name="escenario" value="A" style="width:auto; margin-right:10px;">
+        <strong>Escenario A: Ajuste de Nómina (Despedir 35%, ~$28,000 flujo este mes)</strong>
+      </label>
+
+      <label style="display:flex; align-items:center; cursor:pointer; margin-bottom:0.5rem;">
+        <input type="radio" name="escenario" value="B" style="width:auto; margin-right:10px;">
+        <strong>Escenario B: Turno Nocturno (22:00-06:00, +$8,000 nómina/mes)</strong>
+      </label>
+
+      <label style="display:flex; align-items:center; cursor:pointer; margin-bottom:0.5rem;">
+        <input type="radio" name="escenario" value="C" style="width:auto; margin-right:10px;">
+        <strong>Escenario C: Generadores Diésel ($3,500 alquiler + $2,000 combustible/mes)</strong>
+      </label>
+    </div>
+  </div>
+
+  <div style="text-align:right;">
+    <button class="btn btn-primary" onclick="submitDecision()">✓ Enviar mi Decisión</button>
+  </div>
+</div>
+
+<!-- ADMIN PAGE -->
+<div id="page-admin" class="page main">
+  <h1>📋 Registro de Decisiones</h1>
+  <p style="font-family:Arial,sans-serif; font-size:0.85rem; color:var(--muted); margin-bottom:1.5rem;">Panel confidencial del docente</p>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <strong>Total: <span id="adminCount">0</span> decisiones</strong>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-gold btn-sm" onclick="exportCSV()" style="padding:5px 12px; font-size:0.75rem;">↓ Exportar CSV</button>
+        <button class="btn" style="background:var(--red); color:#fff; padding:5px 12px; font-size:0.75rem;" onclick="clearAll()">🗑 Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table style="width:100%; border-collapse:collapse; font-family:Arial; font-size:0.82rem;">
+      <thead>
+        <tr style="background:var(--ink2); color:#ccc;">
+          <th style="padding:10px; text-align:left; font-size:0.7rem;">Estado</th>
+          <th style="padding:10px; text-align:left;">Estudiante</th>
+          <th style="padding:10px; text-align:left;">Producto</th>
+          <th style="padding:10px; text-align:left;">Cantidad</th>
+          <th style="padding:10px; text-align:left;">Escenario</th>
+          <th style="padding:10px; text-align:left;">Puntaje</th>
+          <th style="padding:10px; text-align:left;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="adminBody">
+        <tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--muted);">Sin registros</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="page-login" class="page main">
+  <div style="max-width:400px; margin:4rem auto;">
+    <div class="card">
+      <h2 style="font-size:1.3rem; margin-bottom:1rem;">Acceso Docente</h2>
+      <label>Contraseña</label>
+      <input type="password" id="pwInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Ingresar</button>
+      <div id="loginError" style="color:var(--red); font-family:Arial; font-size:0.82rem; margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "fca2025docente";
+let decisions = [];
+let adminMode = false;
+
+async function loadData() {
+  try {
+    const r = await window.storage.get('sim-decisions');
+    if (r && r.value) decisions = JSON.parse(r.value);
+  } catch(e) { decisions = []; }
+}
+
+async function saveData() {
+  try {
+    await window.storage.set('sim-decisions', JSON.stringify(decisions));
+  } catch(e) {}
+}
+
+function renderRanking() {
+  const data = decisions.filter(d => d.estado === 'verificada');
+  data.sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0));
+  
+  const tbody = document.getElementById('rankBody');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--muted);">Aún no hay decisiones registradas</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((d, i) => {
+    const rank = i + 1;
+    const icon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    return `
+      <tr>
+        <td><strong>${icon}</strong></td>
+        <td>${d.nombre}</td>
+        <td>${d.producto}</td>
+        <td>${d.cantidad}</td>
+        <td>${d.escenario}</td>
+        <td><strong>${d.puntaje || 0}</strong></td>
+      </tr>`;
+  }).join('');
+}
+
+function renderAdmin() {
+  const count = decisions.length;
+  document.getElementById('adminCount').textContent = count;
+
+  const tbody = document.getElementById('adminBody');
+  if (!count) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:var(--muted);">Sin registros</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = decisions.map((d, i) => {
+    const statusIcon = d.estado === 'verificada' ? '✓' : d.estado === 'anulada' ? '✕' : '⏳';
+    const statusColor = d.estado === 'verificada' ? 'var(--green)' : d.estado === 'anulada' ? 'var(--red)' : 'var(--gold)';
+    return `
+      <tr>
+        <td style="color:${statusColor}; font-weight:bold;">${statusIcon}</td>
+        <td>${d.nombre}</td>
+        <td>${d.producto}</td>
+        <td>${d.cantidad}</td>
+        <td>${d.escenario}</td>
+        <td><strong>${d.puntaje || 0}</strong></td>
+        <td style="display:flex; gap:4px;">
+          ${d.estado === 'pendiente' ? `<button style="padding:3px 8px; background:var(--green); color:#fff; border:none; border-radius:3px; font-size:0.7rem; cursor:pointer;" onclick="verify(${i})">✓</button>` : ''}
+          ${d.estado !== 'anulada' ? `<button style="padding:3px 8px; background:var(--red); color:#fff; border:none; border-radius:3px; font-size:0.7rem; cursor:pointer;" onclick="annul(${i})">✕</button>` : `<button style="padding:3px 8px; background:var(--accent); color:#fff; border:none; border-radius:3px; font-size:0.7rem; cursor:pointer;" onclick="restore(${i})">↩</button>`}
+          <button style="padding:3px 8px; background:#666; color:#fff; border:none; border-radius:3px; font-size:0.7rem; cursor:pointer;" onclick="deleteRecord(${i})">🗑</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function verify(i) {
+  if(!confirm(`¿Verificar "${decisions[i].nombre}"?`)) return;
+  decisions[i].estado = 'verificada';
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+async function annul(i) {
+  if(!confirm(`¿Anular "${decisions[i].nombre}"?`)) return;
+  decisions[i].estado = 'anulada';
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+async function restore(i) {
+  if(!confirm(`¿Restaurar "${decisions[i].nombre}"?`)) return;
+  decisions[i].estado = 'pendiente';
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+async function deleteRecord(i) {
+  if(!confirm(`¿Eliminar "${decisions[i].nombre}" permanentemente?`)) return;
+  decisions.splice(i, 1);
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+async function submitDecision() {
+  const nombre = (document.getElementById('sApellidos').value.trim() + ' ' + document.getElementById('sNombres').value.trim()).trim();
+  const producto = document.getElementById('sProducto').value;
+  const cantidad = document.getElementById('sCantidad').value;
+  const escenario = document.querySelector('input[name="escenario"]:checked')?.value || '';
+
+  if (!nombre || nombre.length < 5) { alert('Ingresa nombre completo'); return; }
+  if (!producto) { alert('Selecciona producto'); return; }
+  if (!cantidad) { alert('Ingresa cantidad'); return; }
+  if (!escenario) { alert('Selecciona escenario (A, B o C)'); return; }
+
+  const decision = {
+    nombre,
+    producto,
+    cantidad: parseInt(cantidad),
+    escenario,
+    puntaje: parseInt(cantidad) >= 50 ? 10 : 5,
+    estado: 'pendiente',
+    timestamp: new Date().toLocaleString('es-EC')
+  };
+
+  const idx = decisions.findIndex(d => d.nombre.toLowerCase() === nombre.toLowerCase());
+  if (idx >= 0) decisions[idx] = decision;
+  else decisions.push(decision);
+
+  await saveData();
+  renderRanking();
+  document.getElementById('studentAlert').innerHTML = `<div class="alert alert-success">✅ Decisión registrada. Aguarda verificación del docente.</div>`;
+  setTimeout(() => switchTab('ranking'), 2000);
+}
+
+function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PASSWORD) {
+    adminMode = true;
+    document.getElementById('adminBadge').classList.remove('hidden');
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+    switchTab('admin');
+    renderAdmin();
+  } else {
+    document.getElementById('loginError').textContent = 'Contraseña incorrecta';
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === `page-${name}`));
+  if (name === 'admin' && !adminMode) { switchTab('login'); return; }
+  if (name === 'ranking') renderRanking();
+  if (name === 'admin') renderAdmin();
+}
+
+function exportCSV() {
+  const headers = ['Estado','Nombre','Producto','Cantidad','Escenario','Puntaje','Fecha'];
+  const rows = decisions.map(d => [d.estado, d.nombre, d.producto, d.cantidad, d.escenario, d.puntaje || 0, d.timestamp].map(v => `"${v}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'UTEGSA_Simulador_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+async function clearAll() {
+  if(!confirm('¿Eliminar TODOS los registros?')) return;
+  decisions = [];
+  await saveData();
+  renderAdmin();
+  renderRanking();
+}
+
+(async function() {
+  await loadData();
+  renderRanking();
+  setInterval(async () => {
+    await loadData();
+    renderRanking();
+    if (adminMode) renderAdmin();
+  }, 10000);
+})();
+</script>
+</body>
+</html>
