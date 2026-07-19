@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Revisión in Situ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#16273D;
+    --navy-2:#24405F;
+    --safety:#F2A73B;
+    --paper:#F5F6F4;
+    --ink:#1C1C1C;
+    --line:#D8DCE1;
+    --danger:#C1443D;
+    --ok:#2F7A52;
+    --mute:#6B7480;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{
+    background:var(--navy);
+    color:#fff;
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:3px solid var(--safety);
+  }
+  .topbar .title{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:0.3px;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .topbar .eyebrow{
+    font-size:11px;
+    color:#C7D1DE;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    font-weight:600;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:24px 16px 60px;
+  }
+  .tabs{
+    display:flex;
+    gap:0;
+    margin-bottom:18px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 12px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--mute);
+    cursor:pointer;
+    background:#fff;
+    border:none;
+  }
+  .tab.active{
+    background:var(--navy);
+    color:#fff;
+  }
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:22px;
+  }
+  .section-label{
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:13px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    color:var(--navy-2);
+    margin:0 0 8px;
+  }
+  .plate-block{
+    display:flex;
+    justify-content:center;
+    margin-bottom:22px;
+  }
+  .plate{
+    background:#fff;
+    border:3px solid var(--navy);
+    border-radius:8px;
+    width:260px;
+    overflow:hidden;
+    box-shadow:0 2px 0 rgba(0,0,0,0.06);
+  }
+  .plate-strip{
+    background:var(--navy);
+    color:#fff;
+    text-align:center;
+    font-family:'Barlow Condensed',sans-serif;
+    font-size:11px;
+    letter-spacing:2px;
+    font-weight:700;
+    padding:3px 0;
+  }
+  .plate input{
+    width:100%;
+    border:none;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:30px;
+    letter-spacing:4px;
+    padding:14px 6px 10px;
+    text-transform:uppercase;
+    color:var(--navy);
+    background:transparent;
+  }
+  .plate input:focus{outline:none;}
+  .plate input::placeholder{color:#B8C2CE; letter-spacing:3px;}
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--mute);
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    margin-bottom:6px;
+  }
+  .field .req{color:var(--danger);}
+  input[type=text], select, textarea{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:10px 12px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    background:#fbfbfb;
+  }
+  input[type=text]:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--navy-2);
+    background:#fff;
+  }
+  textarea{resize:vertical; min-height:80px;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:480px){.grid2{grid-template-columns:1fr;}}
+
+  .photo-zone{
+    border:1.5px dashed var(--line);
+    border-radius:9px;
+    padding:16px;
+    text-align:center;
+    background:#fafafa;
+  }
+  .photo-zone .btns{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .btn-photo{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    padding:9px 16px;
+    border-radius:7px;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .btn-photo:hover{background:var(--navy-2);}
+  .thumbs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:14px;
+  }
+  .thumb{
+    position:relative;
+    width:76px;
+    height:76px;
+    border-radius:6px;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  .thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+  .thumb .rm{
+    position:absolute;
+    top:2px; right:2px;
+    background:rgba(20,20,20,0.7);
+    color:#fff;
+    border:none;
+    width:20px; height:20px;
+    border-radius:50%;
+    font-size:12px;
+    line-height:20px;
+    cursor:pointer;
+    padding:0;
+  }
+  .submit{
+    width:100%;
+    background:var(--safety);
+    color:var(--navy);
+    border:none;
+    padding:14px;
+    border-radius:8px;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .submit:hover{background:#e0952a;}
+  .submit:disabled{background:#ddd; color:#999; cursor:not-allowed;}
+  .toast{
+    position:fixed;
+    bottom:22px; left:50%;
+    transform:translateX(-50%);
+    background:var(--ok);
+    color:#fff;
+    padding:12px 20px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:14px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.18);
+    animation:fadein 0.25s ease;
+  }
+  @keyframes fadein{from{opacity:0; transform:translate(-50%,8px);} to{opacity:1; transform:translate(-50%,0);}}
+  .err{color:var(--danger); font-size:13px; margin-top:4px;}
+
+  /* records list */
+  .rec-search{margin-bottom:14px;}
+  .rec{
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:14px;
+    margin-bottom:12px;
+    background:#fff;
+  }
+  .rec-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .rec-plate{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:17px;
+    background:var(--paper);
+    border:1.5px solid var(--navy);
+    border-radius:5px;
+    padding:2px 8px;
+    letter-spacing:1px;
+  }
+  .rec-date{font-size:12px; color:var(--mute); white-space:nowrap;}
+  .rec-meta{font-size:13.5px; color:#3a3a3a; margin:8px 0 4px;}
+  .rec-tag{
+    display:inline-block;
+    background:#FDEFD9;
+    color:#8A5A12;
+    font-size:12px;
+    font-weight:600;
+    padding:2px 9px;
+    border-radius:20px;
+    margin-bottom:6px;
+  }
+  .rec-obs{font-size:13.5px; color:#444; margin:6px 0; white-space:pre-wrap;}
+  .rec-thumbs{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .rec-thumbs img{width:56px; height:56px; object-fit:cover; border-radius:5px; border:1px solid var(--line); cursor:pointer;}
+  .empty{text-align:center; color:var(--mute); padding:40px 10px; font-size:14px;}
+  .loading{text-align:center; color:var(--mute); padding:30px; font-size:14px;}
+  .lightbox{
+    position:fixed; inset:0; background:rgba(10,14,20,0.9);
+    display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .lightbox img{max-width:100%; max-height:100%; border-radius:6px;}
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(10,14,20,0.55);
+    display:flex; align-items:center; justify-content:center; z-index:60; padding:20px;
+  }
+  .modal-box{
+    background:#fff; border-radius:10px; padding:22px;
+    width:100%; max-width:340px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.25);
+  }
+  .badge-count{
+    background:var(--safety); color:var(--navy); border-radius:20px; font-size:11px;
+    padding:1px 7px; font-weight:700; margin-left:6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title">🔧 Registro de Revisión in Situ</div>
+  <div class="eyebrow">Control Interno UNGYE</div>
+</div>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" id="tabForm" onclick="showTab('form')">Nuevo registro</button>
+    <button class="tab" id="tabList" onclick="showTab('list')">Ver registros<span class="badge-count" id="countBadge">0</span></button>
+    <button class="tab" id="tabConfig" onclick="showTab('config')">Configuración</button>
+  </div>
+
+  <!-- FORM VIEW -->
+  <div id="viewForm">
+    <div id="dbBanner" style="font-size:12.5px; text-align:center; padding:6px; border-radius:6px; margin-bottom:10px; display:none;"></div>
+    <div class="card">
+      <div class="plate-block">
+        <div class="plate">
+          <div class="plate-strip">PLACA</div>
+          <input type="text" id="placa" placeholder="ABC-1234" maxlength="10">
+        </div>
+      </div>
+      <div id="matchStatus" style="text-align:center; font-size:12.5px; margin:-8px 0 16px; display:none;"></div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Unidad</label>
+          <input type="text" id="unidad" placeholder="Se autocompleta según la placa">
+        </div>
+        <div class="field">
+          <label>Departamento <span class="req">*</span></label>
+          <input type="text" id="departamento" placeholder="Se autocompleta según la placa">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Custodio / Conductor <span class="req">*</span></label>
+        <input type="text" id="custodio" placeholder="Se autocompleta según la placa">
+      </div>
+
+      <div class="field">
+        <label>Inspector <span class="req">*</span></label>
+        <select id="inspector">
+          <option value="">Selecciona...</option>
+          <option>INSP01</option>
+          <option>INSP02</option>
+          <option>INSP03</option>
+        </select>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Fecha <span class="req">*</span></label>
+          <input type="date" id="fecha">
+        </div>
+        <div class="field">
+          <label>Hora de inspección <span class="req">*</span></label>
+          <input type="time" id="hora">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Dirección</label>
+          <input type="text" id="direccion" placeholder="Lugar de la inspección">
+        </div>
+        <div class="field">
+          <label>Servidores presentes</label>
+          <input type="text" id="servidores" placeholder="Nombres de servidores presentes">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observación en el trabajo <span class="req">*</span></label>
+        <select id="obsTrabajo">
+          <option value="">Selecciona una opción...</option>
+          <option>Sin Orden de trabajo/ realizando otro trabajo</option>
+          <option>Sin incidencia (Guardia permanente)</option>
+          <option>Realizando labores ajenas a lo de la empresa</option>
+          <option>Sin Supervisión</option>
+          <option>Sin Orden de Trabajo/Sin incidencia</option>
+          <option>No cuentan con las herramientas</option>
+          <option>OTROS</option>
+          <option>Sin observaciones</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Observaciones del Personal <span class="req">*</span></label>
+        <select id="obsPersonal">
+          <option value="">Selecciona una opción...</option>
+          <option>Sin credencial</option>
+          <option>Sin EPP</option>
+          <option>En compañía de persona que no pertenece a CNEL</option>
+          <option>No aplica 5 reglas de oro</option>
+          <option>Sin uniforme</option>
+          <option>OTROS</option>
+          <option>Sin observaciones</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Observaciones en el vehículo <span class="req">*</span></label>
+        <select id="obsVehiculo">
+          <option value="">Selecciona una opción...</option>
+          <option>Sin placa</option>
+          <option>Placa tapada</option>
+          <option>Sin logo Institucional</option>
+          <option>Fuera del parqueo autorizado</option>
+          <option>Sin conos</option>
+          <option>No registra en GPS</option>
+          <option>Observación de su estado/registrado en observación</option>
+          <option>Defectos de funcionamiento</option>
+          <option>OTROS</option>
+          <option>Sin observaciones</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Fotografía(s) de la anomalía — máximo 6 <span class="req">*</span></label>
+        <div class="photo-zone">
+          <div class="btns">
+            <button class="btn-photo" onclick="document.getElementById('cameraInput').click()">📷 Tomar foto</button>
+            <button class="btn-photo" onclick="document.getElementById('fileInput').click()">🖼️ Subir de galería</button>
+          </div>
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+          <div class="thumbs" id="thumbs"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observaciones (opcional)</label>
+        <textarea id="observaciones" placeholder="Detalle adicional a criterio del revisor..."></textarea>
+      </div>
+
+      <div id="formError" class="err" style="display:none;"></div>
+      <button class="submit" id="submitBtn" onclick="submitRecord()">Registrar anomalía</button>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="viewList" style="display:none;">
+    <div class="card">
+      <div style="display:flex; gap:10px; margin-bottom:14px;">
+        <input type="text" class="rec-search" id="search" placeholder="Buscar por placa, custodio o departamento..." oninput="renderList()"
+          style="flex:1; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:14px;">
+        <button class="btn-photo" onclick="exportToExcel()" style="white-space:nowrap;">📥 Exportar Excel</button>
+      </div>
+      <div id="listContainer"><div class="loading">Cargando registros...</div></div>
+    </div>
+  </div>
+
+  <!-- CONFIG VIEW (protegida por PIN) -->
+  <div id="viewConfig" style="display:none;">
+
+    <!-- Pantalla de bloqueo -->
+    <div id="configLock" class="card">
+      <div class="section-label">Acceso restringido</div>
+      <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+        Esta sección es solo para el administrador. Ingresa el PIN para continuar.
+      </p>
+      <input type="password" id="configLockInput" placeholder="PIN" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:15px; margin-bottom:8px;">
+      <div id="configLockError" class="err" style="display:none; margin-bottom:8px;"></div>
+      <button class="submit" onclick="unlockConfig()">Ingresar</button>
+    </div>
+
+    <!-- Contenido real de configuración -->
+    <div id="configContent" style="display:none;">
+      <div class="card">
+        <div class="section-label">Acceso de administrador (borrado de registros)</div>
+        <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+          Este mismo PIN protege esta sección de Configuración y el borrado de registros en "Ver registros".
+        </p>
+        <div class="field">
+          <label>PIN de administrador</label>
+          <input type="text" id="adminPin" placeholder="Ej. 4 a 6 dígitos" maxlength="10">
+        </div>
+        <button class="btn-photo" onclick="saveAdminPin()">Guardar PIN</button>
+        <div id="pinStatus" style="margin-top:10px; font-size:13.5px;"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-label">Base de vehículos</div>
+        <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+          Sube el Excel con las columnas <b>UNIDAD, PLACAS, DEPARTAMENTO, CUSTODIO/CONDUCTOR</b> (en cualquier orden).
+          Al subir un archivo nuevo, reemplaza la base anterior. <b>Esta base se guarda en este dispositivo</b> —
+          cada inspector debe subir el Excel una vez en su propio celular.
+        </p>
+        <div class="photo-zone">
+          <div class="btns">
+            <button class="btn-photo" onclick="document.getElementById('dbFile').click()">📊 Seleccionar archivo Excel/CSV</button>
+          </div>
+          <input type="file" id="dbFile" accept=".xlsx,.xls,.csv" style="display:none">
+        </div>
+        <div id="dbStatus" style="margin-top:14px; font-size:14px;"></div>
+        <div id="dbPreview" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-label">Conexión con Supabase</div>
+        <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+          Esta app ya viene conectada por defecto a la base de datos central — Julio y Lorena no necesitan
+          tocar nada aquí. Esta sección es solo para ti, por si en el futuro cambias de proyecto en Supabase.
+        </p>
+        <div class="field">
+          <label>Project URL</label>
+          <input type="text" id="supabaseUrl" placeholder="https://xxxxxxxx.supabase.co">
+        </div>
+        <div class="field">
+          <label>Anon public key</label>
+          <input type="text" id="supabaseKey" placeholder="eyJhbGciOi...">
+        </div>
+        <button class="btn-photo" onclick="saveSupabaseConfig()">Guardar conexión</button>
+        <div id="configStatus" style="margin-top:10px; font-size:13.5px;"></div>
+
+        <div class="section-label" style="margin-top:24px;">Cómo obtener estos datos (una sola vez)</div>
+        <ol style="font-size:13.5px; color:#333; padding-left:20px; line-height:1.6;">
+          <li>Crea un proyecto gratuito en <b>supabase.com</b>.</li>
+          <li>Ve a <b>SQL Editor</b> (icono de base de datos), pega el archivo <b>supabase_setup.sql</b> que te compartí y dale a <b>Run</b>. Esto crea la tabla de registros y el almacén de fotos automáticamente.</li>
+          <li>Ve a <b>Project Settings → API</b>.</li>
+          <li>Copia el <b>Project URL</b> y la llave <b>anon public</b>, y pégalos arriba.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+<div id="lightboxHost"></div>
+<div id="modalHost"></div>
+
+<script>
+let photos = []; // {dataUrl}
+let allRecords = [];
+let configUnlocked = false;
+
+function showTab(tab){
+  document.getElementById('tabForm').classList.toggle('active', tab==='form');
+  document.getElementById('tabList').classList.toggle('active', tab==='list');
+  document.getElementById('tabConfig').classList.toggle('active', tab==='config');
+  document.getElementById('viewForm').style.display = tab==='form' ? 'block':'none';
+  document.getElementById('viewList').style.display = tab==='list' ? 'block':'none';
+  document.getElementById('viewConfig').style.display = tab==='config' ? 'block':'none';
+  if(tab==='list') loadRecords();
+  if(tab==='config') openConfigTab();
+}
+
+function openConfigTab(){
+  document.getElementById('configLockInput').value = '';
+  document.getElementById('configLockError').style.display = 'none';
+
+  const storedPin = localStorage.getItem('adminPin') || '';
+
+  if(!storedPin){
+    // Primera vez: no hay PIN todavía, se deja entrar para configurarlo
+    configUnlocked = true;
+  }
+
+  if(configUnlocked){
+    document.getElementById('configLock').style.display = 'none';
+    document.getElementById('configContent').style.display = 'block';
+    loadSheetsUrl();
+    loadAdminPin();
+    refreshDbStatus();
+  } else {
+    document.getElementById('configLock').style.display = 'block';
+    document.getElementById('configContent').style.display = 'none';
+  }
+}
+
+function unlockConfig(){
+  const entered = document.getElementById('configLockInput').value;
+  const errEl = document.getElementById('configLockError');
+  const storedPin = localStorage.getItem('adminPin') || '';
+
+  if(!entered || entered !== storedPin){
+    errEl.textContent = 'PIN incorrecto.';
+    errEl.style.display = 'block';
+    return;
+  }
+  configUnlocked = true;
+  openConfigTab();
+}
+
+let vehiculosDB = []; // {unidad, placa, placaNorm, departamento, custodio}
+
+function exportToExcel(){
+  if(!allRecords.length){
+    showToast('No hay registros para exportar todavía.');
+    return;
+  }
+  const rows = allRecords.map(r => ({
+    'Fecha inspección': r.fechaInspeccion || '',
+    'Hora': r.hora || '',
+    'Inspector': r.inspector || '',
+    'Placa': r.placa || '',
+    'Unidad': r.unidad || '',
+    'Departamento': r.departamento || '',
+    'Custodio/Conductor': r.custodio || '',
+    'Dirección': r.direccion || '',
+    'Servidores presentes': r.servidores || '',
+    'Observación en el trabajo': r.obsTrabajo || '',
+    'Observaciones del Personal': r.obsPersonal || '',
+    'Observaciones en el vehículo': r.obsVehiculo || '',
+    'Observaciones adicionales': r.observaciones || '',
+    'Cantidad de fotos': (r.photos||[]).length
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = Object.keys(rows[0]).map(k => ({wch: Math.max(14, k.length+2)}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Registros');
+  const hoy = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Registro_Revision_In_Situ_${hoy}.xlsx`);
+}
+
+function normPlaca(s){
+  return (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'');
+}
+
+document.getElementById('placa').addEventListener('input', (e)=>{
+  e.target.value = e.target.value.toUpperCase();
+  tryInstantMatch(e.target.value);
+});
+document.getElementById('placa').addEventListener('blur', (e)=>{
+  lookupPlaca(e.target.value);
+});
+
+function tryInstantMatch(placaVal){
+  const norm = normPlaca(placaVal);
+  const statusEl = document.getElementById('matchStatus');
+  if(!norm){ statusEl.style.display='none'; return; }
+  const match = vehiculosDB.find(v => v.placaNorm === norm);
+  if(match){
+    document.getElementById('unidad').value = match.unidad;
+    document.getElementById('departamento').value = match.departamento;
+    document.getElementById('custodio').value = match.custodio;
+    statusEl.textContent = '✓ Coincidencia encontrada en la base de vehículos';
+    statusEl.style.color = 'var(--ok)';
+    statusEl.style.display = 'block';
+  } else {
+    // Mientras se sigue escribiendo, no mostramos advertencia todavía
+    statusEl.style.display = 'none';
+  }
+}
+
+function lookupPlaca(placaVal){
+  const norm = normPlaca(placaVal);
+  const statusEl = document.getElementById('matchStatus');
+  if(!norm){ statusEl.style.display='none'; return; }
+  const match = vehiculosDB.find(v => v.placaNorm === norm);
+  if(match){
+    document.getElementById('unidad').value = match.unidad;
+    document.getElementById('departamento').value = match.departamento;
+    document.getElementById('custodio').value = match.custodio;
+    statusEl.textContent = '✓ Coincidencia encontrada en la base de vehículos';
+    statusEl.style.color = 'var(--ok)';
+    statusEl.style.display = 'block';
+  } else {
+    statusEl.textContent = vehiculosDB.length ? '⚠ Placa no encontrada — completa los datos manualmente' : '⚠ Aún no has cargado la base de vehículos (pestaña "Configuración")';
+    statusEl.style.color = 'var(--danger)';
+    statusEl.style.display = 'block';
+  }
+}
+
+function loadAdminPin(){
+  const statusEl = document.getElementById('pinStatus');
+  const pin = localStorage.getItem('adminPin') || '';
+  document.getElementById('adminPin').value = '';
+  statusEl.textContent = pin ? '✓ PIN configurado en este dispositivo. No se muestra de nuevo por seguridad.' : 'Aún no has configurado un PIN en este dispositivo.';
+  statusEl.style.color = pin ? 'var(--ok)' : 'var(--mute)';
+}
+
+function saveAdminPin(){
+  const pin = document.getElementById('adminPin').value.trim();
+  const statusEl = document.getElementById('pinStatus');
+  if(!pin){ statusEl.textContent = 'Escribe un PIN antes de guardar.'; statusEl.style.color='var(--danger)'; return; }
+  localStorage.setItem('adminPin', pin);
+  statusEl.textContent = '✓ PIN guardado en este dispositivo.';
+  statusEl.style.color = 'var(--ok)';
+  document.getElementById('adminPin').value = '';
+}
+
+function deleteRecord(id){
+  const host = document.getElementById('modalHost');
+  host.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-box">
+        <div class="section-label" style="margin-top:0;">Eliminar registro</div>
+        <p id="modalMsg" style="font-size:13.5px; color:#333;">Ingresa el PIN de administrador para eliminar este registro. Esta acción no se puede deshacer.</p>
+        <input type="password" id="modalPinInput" placeholder="PIN" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:15px; margin-bottom:8px;">
+        <div id="modalError" class="err" style="display:none; margin-bottom:8px;"></div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button onclick="closeModal()" style="background:#eee; border:none; padding:9px 16px; border-radius:7px; font-weight:600; cursor:pointer;">Cancelar</button>
+          <button onclick="confirmDelete('${id}')" style="background:var(--danger); color:#fff; border:none; padding:9px 16px; border-radius:7px; font-weight:600; cursor:pointer;">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalPinInput').focus();
+}
+
+function closeModal(){
+  document.getElementById('modalHost').innerHTML = '';
+}
+
+async function confirmDelete(id){
+  const entered = document.getElementById('modalPinInput').value;
+  const errEl = document.getElementById('modalError');
+  const storedPin = localStorage.getItem('adminPin') || '';
+
+  if(!storedPin){
+    errEl.textContent = 'Primero debes configurar un PIN de administrador en la pestaña "Configuración", en este dispositivo.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(!entered || entered !== storedPin){
+    errEl.textContent = 'PIN incorrecto. Intenta de nuevo.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if(!sb){
+    errEl.textContent = 'No hay conexión configurada con Supabase (pestaña Configuración).';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try{
+    const { error } = await sb.from('registros').delete().eq('id', id);
+    if(error) throw error;
+    closeModal();
+    showToast('✓ Registro eliminado');
+    loadRecords();
+  }catch(e){
+    console.error(e);
+    errEl.textContent = 'No se pudo eliminar el registro. Revisa tu conexión a internet.';
+    errEl.style.display = 'block';
+  }
+}
+
+// Conexión por defecto (incluida en el archivo, para que Julio y Lorena
+// no tengan que configurar nada). Solo Luis puede cambiarla editando este
+// archivo, o desde la pestaña Configuración (protegida con PIN).
+const DEFAULT_SUPABASE_URL = 'https://adtrexygljfivgwttczr.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_p8l32WtIMUpzmopx4-sTyA_HXqcQMTw';
+
+let sb = null; // cliente de Supabase activo
+
+function initSupabase(){
+  const url = localStorage.getItem('supabaseUrl') || DEFAULT_SUPABASE_URL;
+  const key = localStorage.getItem('supabaseKey') || DEFAULT_SUPABASE_KEY;
+  if(url && key){
+    try{
+      sb = window.supabase.createClient(url, key);
+    }catch(e){ sb = null; }
+  } else {
+    sb = null;
+  }
+}
+initSupabase();
+
+function loadSheetsUrl(){
+  const statusEl = document.getElementById('configStatus');
+  const url = localStorage.getItem('supabaseUrl') || DEFAULT_SUPABASE_URL;
+  const key = localStorage.getItem('supabaseKey') || DEFAULT_SUPABASE_KEY;
+  document.getElementById('supabaseUrl').value = url;
+  document.getElementById('supabaseKey').value = key;
+  const ok = url && key;
+  statusEl.textContent = ok ? '✓ Conexión activa — los registros se guardan en tu base de Supabase.' : '⚠ Obligatorio: sin esta conexión, la app no puede guardar nada.';
+  statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
+}
+
+function saveSupabaseConfig(){
+  const url = document.getElementById('supabaseUrl').value.trim();
+  const key = document.getElementById('supabaseKey').value.trim();
+  const statusEl = document.getElementById('configStatus');
+  localStorage.setItem('supabaseUrl', url);
+  localStorage.setItem('supabaseKey', key);
+  initSupabase();
+  const ok = url && key;
+  statusEl.textContent = ok ? '✓ Conexión guardada en este dispositivo.' : '⚠ Faltan datos, la app no podrá guardar registros.';
+  statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
+}
+
+function loadVehiculosDB(){
+  try{
+    const raw = localStorage.getItem('vehiculosDB');
+    vehiculosDB = raw ? JSON.parse(raw) : [];
+  }catch(e){ vehiculosDB = []; }
+  updateDbBanner();
+}
+
+function updateDbBanner(){
+  const banner = document.getElementById('dbBanner');
+  if(vehiculosDB.length){
+    banner.textContent = `✓ Base de vehículos activa: ${vehiculosDB.length} unidades`;
+    banner.style.background = '#EAF4EE';
+    banner.style.color = 'var(--ok)';
+  } else {
+    banner.textContent = '⚠ No hay base de vehículos cargada — ve a la pestaña "Configuración" y súbela para activar el autocompletado';
+    banner.style.background = '#FBEAEA';
+    banner.style.color = 'var(--danger)';
+  }
+  banner.style.display = 'block';
+}
+
+function findCol(headers, keywords){
+  for(let i=0;i<headers.length;i++){
+    const h = (headers[i]||'').toString().toUpperCase();
+    if(keywords.some(k=>h.includes(k))) return i;
+  }
+  return -1;
+}
+
+document.getElementById('dbFile').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('dbStatus');
+  statusEl.textContent = 'Procesando archivo...';
+  statusEl.style.color = 'var(--mute)';
+  try{
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, {type:'array'});
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+    if(rows.length < 2) throw new Error('El archivo no tiene datos suficientes.');
+
+    // Buscar la fila de encabezados (puede no ser la primera fila del archivo)
+    let headerRowIdx = rows.findIndex(row =>
+      row.some(cell => (cell||'').toString().toUpperCase().includes('PLACA'))
+    );
+    if(headerRowIdx === -1) throw new Error('No se encontró una columna de PLACA en el archivo.');
+
+    const headers = rows[headerRowIdx];
+    const iUnidad = findCol(headers, ['UNIDAD']);
+    const iPlaca = findCol(headers, ['PLACA']);
+    const iDepto = findCol(headers, ['DEPART']);
+    const iCustodio = findCol(headers, ['CUSTODIO','CONDUCTOR']);
+
+    const parsed = [];
+    for(let r=headerRowIdx+1; r<rows.length; r++){
+      const row = rows[r];
+      const placa = row[iPlaca];
+      if(!placa) continue;
+      parsed.push({
+        unidad: iUnidad>-1 ? String(row[iUnidad]||'').trim() : '',
+        placa: String(placa).trim(),
+        placaNorm: normPlaca(placa),
+        departamento: iDepto>-1 ? String(row[iDepto]||'').trim() : '',
+        custodio: iCustodio>-1 ? String(row[iCustodio]||'').trim() : ''
+      });
+    }
+    if(parsed.length === 0) throw new Error('No se pudo extraer ningún vehículo del archivo.');
+
+    localStorage.setItem('vehiculosDB', JSON.stringify(parsed));
+    vehiculosDB = parsed;
+    updateDbBanner();
+    statusEl.textContent = `✓ Base cargada: ${parsed.length} vehículos registrados.`;
+    statusEl.style.color = 'var(--ok)';
+    renderDbPreview(parsed);
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = '✕ ' + err.message;
+    statusEl.style.color = 'var(--danger)';
+  }
+  e.target.value = '';
+});
+
+function renderDbPreview(list){
+  const box = document.getElementById('dbPreview');
+  const sample = list.slice(0,5);
+  box.innerHTML = `
+    <div class="section-label" style="margin-top:6px;">Vista previa (primeros ${sample.length})</div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <tr style="background:var(--paper);">
+        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Unidad</th>
+        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Placa</th>
+        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Departamento</th>
+        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Custodio/Conductor</th>
+      </tr>
+      ${sample.map(v=>`
+        <tr>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.unidad}</td>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.placa}</td>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.departamento}</td>
+          <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.custodio}</td>
+        </tr>`).join('')}
+    </table>
+    </div>
+  `;
+}
+
+async function refreshDbStatus(){
+  await loadVehiculosDB();
+  const statusEl = document.getElementById('dbStatus');
+  if(vehiculosDB.length){
+    statusEl.textContent = `Base actual: ${vehiculosDB.length} vehículos cargados.`;
+    statusEl.style.color = 'var(--mute)';
+    renderDbPreview(vehiculosDB);
+  } else {
+    statusEl.textContent = 'Todavía no hay ninguna base de vehículos cargada.';
+    statusEl.style.color = 'var(--mute)';
+  }
+}
+
+function setDefaultTime(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('hora').value = `${hh}:${mm}`;
+  const yyyy = now.getFullYear();
+  const mo = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  document.getElementById('fecha').value = `${yyyy}-${mo}-${dd}`;
+}
+setDefaultTime();
+
+function resizeImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const maxW = 900;
+        let w = img.width, h = img.height;
+        if(w > maxW){ h = h*(maxW/w); w = maxW; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg', 0.65));
+      };
+      img.onerror = reject;
+      img.src = ev.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFiles(fileList){
+  const files = Array.from(fileList).slice(0, 6 - photos.length);
+  for(const f of files){
+    try{
+      const dataUrl = await resizeImage(f);
+      photos.push(dataUrl);
+    }catch(e){ console.error('Error procesando imagen', e); }
+  }
+  renderThumbs();
+}
+
+document.getElementById('cameraInput').addEventListener('change', (e)=> handleFiles(e.target.files));
+document.getElementById('fileInput').addEventListener('change', (e)=> handleFiles(e.target.files));
+
+function renderThumbs(){
+  const box = document.getElementById('thumbs');
+  box.innerHTML = '';
+  photos.forEach((p, i)=>{
+    const div = document.createElement('div');
+    div.className = 'thumb';
+    div.innerHTML = `<img src="${p}"><button class="rm" onclick="removePhoto(${i})">✕</button>`;
+    box.appendChild(div);
+  });
+}
+function removePhoto(i){ photos.splice(i,1); renderThumbs(); }
+
+function showToast(msg){
+  const host = document.getElementById('toastHost');
+  host.innerHTML = `<div class="toast">${msg}</div>`;
+  setTimeout(()=>{ host.innerHTML=''; }, 2600);
+}
+
+function showError(msg){
+  const el = document.getElementById('formError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearError(){
+  document.getElementById('formError').style.display = 'none';
+}
+
+async function submitRecord(){
+  clearError();
+  const placa = document.getElementById('placa').value.trim();
+  const unidad = document.getElementById('unidad').value.trim();
+  const inspector = document.getElementById('inspector').value;
+  const fechaInspeccion = document.getElementById('fecha').value;
+  const hora = document.getElementById('hora').value;
+  const custodio = document.getElementById('custodio').value.trim();
+  const departamento = document.getElementById('departamento').value.trim();
+  const direccion = document.getElementById('direccion').value.trim();
+  const servidores = document.getElementById('servidores').value.trim();
+  const obsTrabajo = document.getElementById('obsTrabajo').value;
+  const obsPersonal = document.getElementById('obsPersonal').value;
+  const obsVehiculo = document.getElementById('obsVehiculo').value;
+  const observaciones = document.getElementById('observaciones').value.trim();
+
+  if(!placa || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajo || !obsPersonal || !obsVehiculo){
+    showError('Completa inspector, fecha, hora, placa, custodio, departamento y las tres listas de observaciones.');
+    return;
+  }
+  if(photos.length === 0){
+    showError('Adjunta al menos una fotografía de la anomalía.');
+    return;
+  }
+
+  if(!sb){
+    showError('No hay conexión con Supabase configurada. Ve a la pestaña "Configuración" y pega tus datos antes de registrar.');
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+
+  const id = 'insp_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+
+  try{
+    // Subir cada foto al bucket "fotos" y obtener su URL pública
+    const photoUrls = [];
+    for(let i=0; i<photos.length; i++){
+      const blob = await (await fetch(photos[i])).blob();
+      const path = `${placa.replace(/[^A-Z0-9]/gi,'')}_${id}_${i+1}.jpg`;
+      const { error: upErr } = await sb.storage.from('fotos').upload(path, blob, { contentType: 'image/jpeg' });
+      if(upErr) throw upErr;
+      const { data: pub } = sb.storage.from('fotos').getPublicUrl(path);
+      photoUrls.push(pub.publicUrl);
+    }
+
+    const { error: insErr } = await sb.from('registros').insert({
+      id, placa, unidad, inspector,
+      fecha_inspeccion: fechaInspeccion, hora, custodio, departamento, direccion, servidores,
+      obs_trabajo: obsTrabajo, obs_personal: obsPersonal, obs_vehiculo: obsVehiculo,
+      observaciones, fotos: photoUrls
+    });
+    if(insErr) throw insErr;
+
+    showToast('✓ Anomalía registrada — Folio ' + id.slice(-7).toUpperCase());
+    // reset form
+    document.getElementById('placa').value = '';
+    document.getElementById('unidad').value = '';
+    document.getElementById('inspector').value = '';
+    document.getElementById('custodio').value = '';
+    document.getElementById('departamento').value = '';
+    document.getElementById('direccion').value = '';
+    document.getElementById('servidores').value = '';
+    document.getElementById('obsTrabajo').value = '';
+    document.getElementById('obsPersonal').value = '';
+    document.getElementById('obsVehiculo').value = '';
+    document.getElementById('observaciones').value = '';
+    setDefaultTime();
+    document.getElementById('matchStatus').style.display = 'none';
+    photos = [];
+    renderThumbs();
+  }catch(e){
+    console.error(e);
+    showError('No se pudo guardar el registro: ' + (e.message || 'revisa tu conexión a internet.'));
+  }
+  btn.disabled = false; btn.textContent = 'Registrar anomalía';
+}
+
+async function loadRecords(){
+  const container = document.getElementById('listContainer');
+  container.innerHTML = '<div class="loading">Cargando registros...</div>';
+  if(!sb){
+    container.innerHTML = '<div class="empty">Configura la conexión con Supabase en la pestaña "Configuración" para ver los registros.</div>';
+    allRecords = [];
+    updateCountBadge();
+    return;
+  }
+  try{
+    const { data, error } = await sb.from('registros').select('*').order('registrado_en', { ascending: false });
+    if(error) throw error;
+
+    const records = (data || []).map(row => ({
+      id: row.id,
+      fechaInspeccion: row.fecha_inspeccion,
+      hora: row.hora,
+      inspector: row.inspector,
+      placa: row.placa,
+      unidad: row.unidad,
+      departamento: row.departamento,
+      custodio: row.custodio,
+      direccion: row.direccion,
+      servidores: row.servidores,
+      obsTrabajo: row.obs_trabajo,
+      obsPersonal: row.obs_personal,
+      obsVehiculo: row.obs_vehiculo,
+      observaciones: row.observaciones,
+      photos: row.fotos || [],
+      registradoEn: row.registrado_en
+    }));
+    allRecords = records;
+    updateCountBadge();
+    renderList();
+  }catch(e){
+    console.error(e);
+    container.innerHTML = '<div class="empty">No se pudieron cargar los registros. Revisa tu conexión a internet o los datos configurados.</div>';
+  }
+}
+
+function updateCountBadge(){
+  document.getElementById('countBadge').textContent = allRecords.length;
+}
+
+function renderList(){
+  const q = (document.getElementById('search').value || '').toLowerCase();
+  const container = document.getElementById('listContainer');
+  const filtered = allRecords.filter(r=>
+    r.placa.toLowerCase().includes(q) ||
+    r.custodio.toLowerCase().includes(q) ||
+    r.departamento.toLowerCase().includes(q) ||
+    (r.inspector||'').toLowerCase().includes(q)
+  );
+  if(filtered.length === 0){
+    container.innerHTML = '<div class="empty">No hay registros que coincidan.</div>';
+    return;
+  }
+  container.innerHTML = filtered.map(r=>{
+    const fechaMostrar = r.fechaInspeccion ? new Date(r.fechaInspeccion+'T00:00:00').toLocaleDateString('es-EC', {dateStyle:'medium'}) : '—';
+    return `
+      <div class="rec">
+        <div class="rec-top">
+          <span class="rec-plate">${r.placa}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="rec-date">${fechaMostrar} ${r.hora ? '· '+r.hora : ''}</span>
+            <button onclick="deleteRecord('${r.id}')" title="Eliminar registro"
+              style="background:none; border:1px solid var(--line); color:var(--danger); border-radius:5px; width:26px; height:26px; cursor:pointer; font-size:13px;">🗑</button>
+          </div>
+        </div>
+        <div class="rec-tag">Trabajo: ${r.obsTrabajo || '—'}</div>
+        <div class="rec-tag">Personal: ${r.obsPersonal || '—'}</div>
+        <div class="rec-tag">Vehículo: ${r.obsVehiculo || '—'}</div>
+        <div class="rec-meta"><b>Unidad:</b> ${r.unidad || '—'} &nbsp;·&nbsp; <b>Inspector:</b> ${r.inspector || '—'} &nbsp;·&nbsp; <b>Custodio:</b> ${r.custodio} &nbsp;·&nbsp; <b>Depto:</b> ${r.departamento}</div>
+        ${r.direccion ? `<div class="rec-meta"><b>Dirección:</b> ${r.direccion}</div>` : ''}
+        ${r.servidores ? `<div class="rec-meta"><b>Servidores presentes:</b> ${r.servidores}</div>` : ''}
+        ${r.observaciones ? `<div class="rec-obs">${r.observaciones}</div>` : ''}
+        <div class="rec-thumbs">
+          ${r.photos.map(p=>`<img src="${p}" onclick="openLightbox('${p.replace(/'/g,"\\'")}')">`).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openLightbox(src){
+  document.getElementById('lightboxHost').innerHTML = `<div class="lightbox" onclick="this.remove()"><img src="${src}"></div>`;
+}
+
+// initial load of count badge in background
+loadRecords();
+loadVehiculosDB();
+</script>
+</body>
+</html>
