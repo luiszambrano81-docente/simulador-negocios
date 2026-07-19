@@ -498,12 +498,13 @@
         <div class="section-label">Base de vehículos</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
           Sube el Excel con las columnas <b>UNIDAD, PLACAS, DEPARTAMENTO, CUSTODIO/CONDUCTOR</b> (en cualquier orden).
-          Al subir un archivo nuevo, reemplaza la base anterior. <b>Esta base se guarda en este dispositivo</b> —
-          cada inspector debe subir el Excel una vez en su propio celular.
+          Al subir un archivo nuevo, reemplaza la base anterior. <b>Esta base es central</b> — solo tú la subes aquí
+          (protegido con tu PIN) y Julio y Lorena la ven automáticamente, sin hacer nada.
         </p>
         <div class="photo-zone">
           <div class="btns">
             <button class="btn-photo" onclick="document.getElementById('dbFile').click()">📊 Seleccionar archivo Excel/CSV</button>
+            <button class="btn-photo" onclick="exportVehiculos()">📥 Descargar respaldo actual</button>
           </div>
           <input type="file" id="dbFile" accept=".xlsx,.xls,.csv" style="display:none">
         </div>
@@ -626,6 +627,25 @@ function exportToExcel(){
   XLSX.utils.book_append_sheet(wb, ws, 'Registros');
   const hoy = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `Registro_Revision_In_Situ_${hoy}.xlsx`);
+}
+
+function exportVehiculos(){
+  if(!vehiculosDB.length){
+    showToast('No hay base de vehículos cargada todavía.');
+    return;
+  }
+  const rows = vehiculosDB.map(v => ({
+    'UNIDAD': v.unidad || '',
+    'PLACAS': v.placa || '',
+    'DEPARTAMENTO': v.departamento || '',
+    'CUSTODIO/CONDUCTOR': v.custodio || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = Object.keys(rows[0]).map(k => ({wch: Math.max(14, k.length+2)}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vehiculos');
+  const hoy = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Base_Vehiculos_Respaldo_${hoy}.xlsx`);
 }
 
 function normPlaca(s){
@@ -797,11 +817,16 @@ function saveSupabaseConfig(){
   statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
 }
 
-function loadVehiculosDB(){
+async function loadVehiculosDB(){
+  if(!sb){ vehiculosDB = []; updateDbBanner(); return; }
   try{
-    const raw = localStorage.getItem('vehiculosDB');
-    vehiculosDB = raw ? JSON.parse(raw) : [];
-  }catch(e){ vehiculosDB = []; }
+    const { data, error } = await sb.from('vehiculos').select('*');
+    if(error) throw error;
+    vehiculosDB = (data || []).map(v => ({
+      unidad: v.unidad || '', placa: v.placa || '',
+      placaNorm: normPlaca(v.placa), departamento: v.departamento || '', custodio: v.custodio || ''
+    }));
+  }catch(e){ console.error(e); vehiculosDB = []; }
   updateDbBanner();
 }
 
@@ -866,11 +891,23 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
       });
     }
     if(parsed.length === 0) throw new Error('No se pudo extraer ningún vehículo del archivo.');
+    if(!sb) throw new Error('No hay conexión con Supabase.');
 
-    localStorage.setItem('vehiculosDB', JSON.stringify(parsed));
+    statusEl.textContent = 'Subiendo a la base central (puede tardar unos segundos)...';
+
+    // Borra la base de vehículos anterior y sube la nueva completa
+    const { error: delErr } = await sb.from('vehiculos').delete().neq('placa', '__nunca__');
+    if(delErr) throw delErr;
+
+    const rowsToInsert = parsed.map(v => ({
+      placa: v.placa, unidad: v.unidad, departamento: v.departamento, custodio: v.custodio
+    }));
+    const { error: insErr } = await sb.from('vehiculos').insert(rowsToInsert);
+    if(insErr) throw insErr;
+
     vehiculosDB = parsed;
     updateDbBanner();
-    statusEl.textContent = `✓ Base cargada: ${parsed.length} vehículos registrados.`;
+    statusEl.textContent = `✓ Base actualizada: ${parsed.length} vehículos, disponible ya para los 3 dispositivos.`;
     statusEl.style.color = 'var(--ok)';
     renderDbPreview(parsed);
   }catch(err){
