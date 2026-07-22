@@ -188,7 +188,7 @@
   .check-item input{margin-top:3px; flex-shrink:0;}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media (max-width:480px){.grid2{grid-template-columns:1fr;}}
- 
+
   .photo-zone{
     border:1.5px dashed var(--line);
     border-radius:9px;
@@ -272,7 +272,7 @@
   }
   @keyframes fadein{from{opacity:0; transform:translate(-50%,8px);} to{opacity:1; transform:translate(-50%,0);}}
   .err{color:var(--danger); font-size:13px; margin-top:4px;}
- 
+
   /* records list */
   .rec-search{margin-bottom:14px;}
   .rec{
@@ -331,19 +331,19 @@
 </style>
 </head>
 <body>
- 
+
 <div class="topbar">
   <div class="title">🔧 Registro de Revisión in Situ</div>
   <div class="eyebrow">Control Interno UNGYE</div>
 </div>
- 
+
 <div class="wrap">
   <div class="tabs">
     <button class="tab active" id="tabForm" onclick="showTab('form')">Nuevo registro</button>
     <button class="tab" id="tabList" onclick="showTab('list')">Ver registros<span class="badge-count" id="countBadge">0</span></button>
     <button class="tab" id="tabConfig" onclick="showTab('config')">Configuración</button>
   </div>
- 
+
   <!-- FORM VIEW -->
   <div id="viewForm">
     <div id="dbBanner" style="font-size:12.5px; text-align:center; padding:6px; border-radius:6px; margin-bottom:10px; display:none;"></div>
@@ -355,7 +355,7 @@
         </div>
       </div>
       <div id="matchStatus" style="text-align:center; font-size:12.5px; margin:-8px 0 16px; display:none;"></div>
- 
+
       <div class="grid2">
         <div class="field">
           <label>Unidad</label>
@@ -366,22 +366,19 @@
           <input type="text" id="departamento" placeholder="Se autocompleta según la placa">
         </div>
       </div>
- 
+
       <div class="field">
         <label>Custodio / Conductor <span class="req">*</span></label>
         <input type="text" id="custodio" placeholder="Se autocompleta según la placa">
       </div>
- 
+
       <div class="field">
         <label>Inspector <span class="req">*</span></label>
         <select id="inspector">
           <option value="">Selecciona...</option>
-          <option>INSP01</option>
-          <option>INSP02</option>
-          <option>INSP03</option>
         </select>
       </div>
- 
+
       <div class="grid2">
         <div class="field">
           <label>Fecha <span class="req">*</span></label>
@@ -392,7 +389,7 @@
           <input type="time" id="hora">
         </div>
       </div>
- 
+
       <div class="grid2">
         <div class="field">
           <label>Dirección</label>
@@ -403,22 +400,22 @@
           <input type="text" id="servidores" placeholder="Nombres de servidores presentes">
         </div>
       </div>
- 
+
       <div class="field">
         <label>Observación en el trabajo <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
         <div class="check-group" id="obsTrabajo"></div>
       </div>
- 
+
       <div class="field">
         <label>Observaciones del Personal <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
         <div class="check-group" id="obsPersonal"></div>
       </div>
- 
+
       <div class="field">
         <label>Observaciones en el vehículo <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
         <div class="check-group" id="obsVehiculo"></div>
       </div>
- 
+
       <div class="field">
         <label>Fotografía(s) de la anomalía — máximo 6 <span class="req">*</span></label>
         <div class="photo-zone">
@@ -431,17 +428,17 @@
           <div class="thumbs" id="thumbs"></div>
         </div>
       </div>
- 
+
       <div class="field">
         <label>Observaciones (opcional)</label>
         <textarea id="observaciones" placeholder="Detalle adicional a criterio del revisor..."></textarea>
       </div>
- 
+
       <div id="formError" class="err" style="display:none;"></div>
       <button class="submit" id="submitBtn" onclick="submitRecord()">Registrar anomalía</button>
     </div>
   </div>
- 
+
   <!-- LIST VIEW -->
   <div id="viewList" style="display:none;">
     <div class="card">
@@ -453,10 +450,10 @@
       <div id="listContainer"><div class="loading">Cargando registros...</div></div>
     </div>
   </div>
- 
+
   <!-- CONFIG VIEW (protegida por PIN) -->
   <div id="viewConfig" style="display:none;">
- 
+
     <!-- Pantalla de bloqueo -->
     <div id="configLock" class="card">
       <div class="section-label">Acceso restringido</div>
@@ -467,7 +464,7 @@
       <div id="configLockError" class="err" style="display:none; margin-bottom:8px;"></div>
       <button class="submit" onclick="unlockConfig()">Ingresar</button>
     </div>
- 
+
     <!-- Contenido real de configuración -->
     <div id="configContent" style="display:none;">
       <div class="card">
@@ -482,7 +479,20 @@
         <button class="btn-photo" onclick="saveAdminPin()">Guardar PIN</button>
         <div id="pinStatus" style="margin-top:10px; font-size:13.5px;"></div>
       </div>
- 
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-label">Inspectores</div>
+        <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+          Un nombre/inicial por línea (ej. iniciales de cada persona). Útil si cambia algún supervisor:
+          solo edita esta lista, sin tocar nada más.
+        </p>
+        <div class="field">
+          <textarea id="editInspectores" style="min-height:80px;"></textarea>
+        </div>
+        <button class="btn-photo" onclick="saveOpcionesDropdown()">Guardar cambios</button>
+        <div id="opcionesStatus" style="margin-top:10px; font-size:13.5px;"></div>
+      </div>
+
       <div class="card" style="margin-top:16px;">
         <div class="section-label">Listas de observaciones</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
@@ -502,9 +512,8 @@
           <textarea id="editObsVehiculo" style="min-height:150px;"></textarea>
         </div>
         <button class="btn-photo" onclick="saveOpcionesDropdown()">Guardar listas</button>
-        <div id="opcionesStatus" style="margin-top:10px; font-size:13.5px;"></div>
       </div>
- 
+
       <div class="card" style="margin-top:16px;">
         <div class="section-label">Base de vehículos</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
@@ -522,7 +531,7 @@
         <div id="dbStatus" style="margin-top:14px; font-size:14px;"></div>
         <div id="dbPreview" style="margin-top:14px;"></div>
       </div>
- 
+
       <div class="card" style="margin-top:16px;">
         <div class="section-label">Conexión con Supabase</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
@@ -539,7 +548,7 @@
         </div>
         <button class="btn-photo" onclick="saveSupabaseConfig()">Guardar conexión</button>
         <div id="configStatus" style="margin-top:10px; font-size:13.5px;"></div>
- 
+
         <div class="section-label" style="margin-top:24px;">Cómo obtener estos datos (una sola vez)</div>
         <ol style="font-size:13.5px; color:#333; padding-left:20px; line-height:1.6;">
           <li>Crea un proyecto gratuito en <b>supabase.com</b>.</li>
@@ -551,16 +560,16 @@
     </div>
   </div>
 </div>
- 
+
 <div id="toastHost"></div>
 <div id="lightboxHost"></div>
 <div id="modalHost"></div>
- 
+
 <script>
 let photos = []; // {dataUrl}
 let allRecords = [];
 let configUnlocked = false;
- 
+
 function showTab(tab){
   document.getElementById('tabForm').classList.toggle('active', tab==='form');
   document.getElementById('tabList').classList.toggle('active', tab==='list');
@@ -571,18 +580,18 @@ function showTab(tab){
   if(tab==='list') loadRecords();
   if(tab==='config') openConfigTab();
 }
- 
+
 function openConfigTab(){
   document.getElementById('configLockInput').value = '';
   document.getElementById('configLockError').style.display = 'none';
- 
+
   const storedPin = localStorage.getItem('adminPin') || '';
- 
+
   if(!storedPin){
     // Primera vez: no hay PIN todavía, se deja entrar para configurarlo
     configUnlocked = true;
   }
- 
+
   if(configUnlocked){
     document.getElementById('configLock').style.display = 'none';
     document.getElementById('configContent').style.display = 'block';
@@ -595,12 +604,12 @@ function openConfigTab(){
     document.getElementById('configContent').style.display = 'none';
   }
 }
- 
+
 function unlockConfig(){
   const entered = document.getElementById('configLockInput').value;
   const errEl = document.getElementById('configLockError');
   const storedPin = localStorage.getItem('adminPin') || '';
- 
+
   if(!entered || entered !== storedPin){
     errEl.textContent = 'PIN incorrecto.';
     errEl.style.display = 'block';
@@ -609,9 +618,9 @@ function unlockConfig(){
   configUnlocked = true;
   openConfigTab();
 }
- 
+
 let vehiculosDB = []; // {unidad, placa, placaNorm, departamento, custodio}
- 
+
 function exportToExcel(){
   if(!allRecords.length){
     showToast('No hay registros para exportar todavía.');
@@ -640,7 +649,7 @@ function exportToExcel(){
   const hoy = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `Registro_Revision_In_Situ_${hoy}.xlsx`);
 }
- 
+
 function exportVehiculos(){
   if(!vehiculosDB.length){
     showToast('No hay base de vehículos cargada todavía.');
@@ -659,11 +668,11 @@ function exportVehiculos(){
   const hoy = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `Base_Vehiculos_Respaldo_${hoy}.xlsx`);
 }
- 
+
 function normPlaca(s){
   return (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'');
 }
- 
+
 document.getElementById('placa').addEventListener('input', (e)=>{
   e.target.value = e.target.value.toUpperCase();
   tryInstantMatch(e.target.value);
@@ -671,7 +680,7 @@ document.getElementById('placa').addEventListener('input', (e)=>{
 document.getElementById('placa').addEventListener('blur', (e)=>{
   lookupPlaca(e.target.value);
 });
- 
+
 function tryInstantMatch(placaVal){
   const norm = normPlaca(placaVal);
   const statusEl = document.getElementById('matchStatus');
@@ -689,7 +698,7 @@ function tryInstantMatch(placaVal){
     statusEl.style.display = 'none';
   }
 }
- 
+
 function lookupPlaca(placaVal){
   const norm = normPlaca(placaVal);
   const statusEl = document.getElementById('matchStatus');
@@ -708,7 +717,7 @@ function lookupPlaca(placaVal){
     statusEl.style.display = 'block';
   }
 }
- 
+
 function loadAdminPin(){
   const statusEl = document.getElementById('pinStatus');
   const pin = localStorage.getItem('adminPin') || '';
@@ -716,7 +725,7 @@ function loadAdminPin(){
   statusEl.textContent = pin ? '✓ PIN configurado en este dispositivo. No se muestra de nuevo por seguridad.' : 'Aún no has configurado un PIN en este dispositivo.';
   statusEl.style.color = pin ? 'var(--ok)' : 'var(--mute)';
 }
- 
+
 function saveAdminPin(){
   const pin = document.getElementById('adminPin').value.trim();
   const statusEl = document.getElementById('pinStatus');
@@ -726,7 +735,7 @@ function saveAdminPin(){
   statusEl.style.color = 'var(--ok)';
   document.getElementById('adminPin').value = '';
 }
- 
+
 function deleteRecord(id){
   const host = document.getElementById('modalHost');
   host.innerHTML = `
@@ -745,16 +754,16 @@ function deleteRecord(id){
   `;
   document.getElementById('modalPinInput').focus();
 }
- 
+
 function closeModal(){
   document.getElementById('modalHost').innerHTML = '';
 }
- 
+
 async function confirmDelete(id){
   const entered = document.getElementById('modalPinInput').value;
   const errEl = document.getElementById('modalError');
   const storedPin = localStorage.getItem('adminPin') || '';
- 
+
   if(!storedPin){
     errEl.textContent = 'Primero debes configurar un PIN de administrador en la pestaña "Configuración", en este dispositivo.';
     errEl.style.display = 'block';
@@ -765,13 +774,13 @@ async function confirmDelete(id){
     errEl.style.display = 'block';
     return;
   }
- 
+
   if(!sb){
     errEl.textContent = 'No hay conexión configurada con Supabase (pestaña Configuración).';
     errEl.style.display = 'block';
     return;
   }
- 
+
   try{
     const { error } = await sb.from('registros').delete().eq('id', id);
     if(error) throw error;
@@ -784,22 +793,23 @@ async function confirmDelete(id){
     errEl.style.display = 'block';
   }
 }
- 
+
 // Conexión por defecto (incluida en el archivo, para que Julio y Lorena
 // no tengan que configurar nada). Solo Luis puede cambiarla editando este
 // archivo, o desde la pestaña Configuración (protegida con PIN).
 const DEFAULT_SUPABASE_URL = 'https://adtrexygljfivgwttczr.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_p8l32WtIMUpzmopx4-sTyA_HXqcQMTw';
- 
+
 const DEFAULT_OPCIONES = {
   obs_trabajo: ["Sin Orden de trabajo/ realizando otro trabajo","Sin incidencia (Guardia permanente)","Realizando labores ajenas a lo de la empresa","Sin Supervisión","Sin Orden de Trabajo/Sin incidencia","No cuentan con las herramientas","OTROS","Sin observaciones"],
   obs_personal: ["Sin credencial","Sin EPP","En compañía de persona que no pertenece a CNEL","No aplica 5 reglas de oro","Sin uniforme","OTROS","Sin observaciones"],
-  obs_vehiculo: ["Sin placa","Placa tapada","Sin logo Institucional","Fuera del parqueo autorizado","Sin conos","No registra en GPS","Observación de su estado/registrado en observación","Defectos de funcionamiento","OTROS","Sin observaciones"]
+  obs_vehiculo: ["Sin placa","Placa tapada","Sin logo Institucional","Fuera del parqueo autorizado","Sin conos","No registra en GPS","Observación de su estado/registrado en observación","Defectos de funcionamiento","OTROS","Sin observaciones"],
+  inspectores: ["JP","LC","LZ"]
 };
 let opcionesDropdown = JSON.parse(JSON.stringify(DEFAULT_OPCIONES));
- 
+
 let sb = null; // cliente de Supabase activo
- 
+
 function initSupabase(){
   const url = localStorage.getItem('supabaseUrl') || DEFAULT_SUPABASE_URL;
   const key = localStorage.getItem('supabaseKey') || DEFAULT_SUPABASE_KEY;
@@ -812,7 +822,7 @@ function initSupabase(){
   }
 }
 initSupabase();
- 
+
 function loadSheetsUrl(){
   const statusEl = document.getElementById('configStatus');
   const url = localStorage.getItem('supabaseUrl') || DEFAULT_SUPABASE_URL;
@@ -823,7 +833,7 @@ function loadSheetsUrl(){
   statusEl.textContent = ok ? '✓ Conexión activa — los registros se guardan en tu base de Supabase.' : '⚠ Obligatorio: sin esta conexión, la app no puede guardar nada.';
   statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
 }
- 
+
 function saveSupabaseConfig(){
   const url = document.getElementById('supabaseUrl').value.trim();
   const key = document.getElementById('supabaseKey').value.trim();
@@ -835,7 +845,7 @@ function saveSupabaseConfig(){
   statusEl.textContent = ok ? '✓ Conexión guardada en este dispositivo.' : '⚠ Faltan datos, la app no podrá guardar registros.';
   statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
 }
- 
+
 async function loadVehiculosDB(){
   if(!sb){ vehiculosDB = []; updateDbBanner(); return; }
   try{
@@ -848,7 +858,7 @@ async function loadVehiculosDB(){
   }catch(e){ console.error(e); vehiculosDB = []; }
   updateDbBanner();
 }
- 
+
 function updateDbBanner(){
   const banner = document.getElementById('dbBanner');
   if(vehiculosDB.length){
@@ -862,7 +872,7 @@ function updateDbBanner(){
   }
   banner.style.display = 'block';
 }
- 
+
 async function loadOpcionesDropdown(){
   if(sb){
     try{
@@ -871,20 +881,30 @@ async function loadOpcionesDropdown(){
         opcionesDropdown = {
           obs_trabajo: data.obs_trabajo || DEFAULT_OPCIONES.obs_trabajo,
           obs_personal: data.obs_personal || DEFAULT_OPCIONES.obs_personal,
-          obs_vehiculo: data.obs_vehiculo || DEFAULT_OPCIONES.obs_vehiculo
+          obs_vehiculo: data.obs_vehiculo || DEFAULT_OPCIONES.obs_vehiculo,
+          inspectores: data.inspectores || DEFAULT_OPCIONES.inspectores
         };
       }
     }catch(e){ console.error(e); }
   }
   renderDropdownOptions();
 }
- 
+
 function renderDropdownOptions(){
   fillCheckGroup('obsTrabajo', opcionesDropdown.obs_trabajo);
   fillCheckGroup('obsPersonal', opcionesDropdown.obs_personal);
   fillCheckGroup('obsVehiculo', opcionesDropdown.obs_vehiculo);
+  fillSelect('inspector', opcionesDropdown.inspectores);
 }
- 
+
+function fillSelect(selectId, options){
+  const sel = document.getElementById(selectId);
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Selecciona...</option>' +
+    options.map(o => `<option>${o}</option>`).join('');
+  if(options.includes(current)) sel.value = current;
+}
+
 function fillCheckGroup(groupId, options){
   const box = document.getElementById(groupId);
   const previouslyChecked = getCheckedValues(groupId);
@@ -899,33 +919,35 @@ function fillCheckGroup(groupId, options){
     if(previouslyChecked.includes(cb.value)) cb.checked = true;
   });
 }
- 
+
 function getCheckedValues(groupId){
   return Array.from(document.querySelectorAll(`#${groupId} input[type=checkbox]:checked`)).map(cb => cb.value);
 }
- 
+
 function clearCheckGroup(groupId){
   document.querySelectorAll(`#${groupId} input[type=checkbox]`).forEach(cb => cb.checked = false);
 }
- 
+
 function loadOpcionesEditors(){
   document.getElementById('editObsTrabajo').value = opcionesDropdown.obs_trabajo.join('\n');
   document.getElementById('editObsPersonal').value = opcionesDropdown.obs_personal.join('\n');
   document.getElementById('editObsVehiculo').value = opcionesDropdown.obs_vehiculo.join('\n');
+  document.getElementById('editInspectores').value = opcionesDropdown.inspectores.join('\n');
 }
- 
+
 async function saveOpcionesDropdown(){
   const statusEl = document.getElementById('opcionesStatus');
   const parseLines = (id) => document.getElementById(id).value
     .split('\n').map(l => l.trim()).filter(Boolean);
- 
+
   const nuevas = {
     obs_trabajo: parseLines('editObsTrabajo'),
     obs_personal: parseLines('editObsPersonal'),
-    obs_vehiculo: parseLines('editObsVehiculo')
+    obs_vehiculo: parseLines('editObsVehiculo'),
+    inspectores: parseLines('editInspectores')
   };
- 
-  if(!nuevas.obs_trabajo.length || !nuevas.obs_personal.length || !nuevas.obs_vehiculo.length){
+
+  if(!nuevas.obs_trabajo.length || !nuevas.obs_personal.length || !nuevas.obs_vehiculo.length || !nuevas.inspectores.length){
     statusEl.textContent = 'Cada lista necesita al menos una opción.';
     statusEl.style.color = 'var(--danger)';
     return;
@@ -935,7 +957,7 @@ async function saveOpcionesDropdown(){
     statusEl.style.color = 'var(--danger)';
     return;
   }
- 
+
   try{
     const { error } = await sb.from('opciones_dropdown').upsert({ id: 1, ...nuevas });
     if(error) throw error;
@@ -949,7 +971,7 @@ async function saveOpcionesDropdown(){
     statusEl.style.color = 'var(--danger)';
   }
 }
- 
+
 function findCol(headers, keywords){
   for(let i=0;i<headers.length;i++){
     const h = (headers[i]||'').toString().toUpperCase();
@@ -957,7 +979,7 @@ function findCol(headers, keywords){
   }
   return -1;
 }
- 
+
 document.getElementById('dbFile').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
   if(!file) return;
@@ -970,19 +992,19 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
     if(rows.length < 2) throw new Error('El archivo no tiene datos suficientes.');
- 
+
     // Buscar la fila de encabezados (puede no ser la primera fila del archivo)
     let headerRowIdx = rows.findIndex(row =>
       row.some(cell => (cell||'').toString().toUpperCase().includes('PLACA'))
     );
     if(headerRowIdx === -1) throw new Error('No se encontró una columna de PLACA en el archivo.');
- 
+
     const headers = rows[headerRowIdx];
     const iUnidad = findCol(headers, ['UNIDAD']);
     const iPlaca = findCol(headers, ['PLACA']);
     const iDepto = findCol(headers, ['DEPART']);
     const iCustodio = findCol(headers, ['CUSTODIO','CONDUCTOR']);
- 
+
     const parsed = [];
     for(let r=headerRowIdx+1; r<rows.length; r++){
       const row = rows[r];
@@ -998,19 +1020,19 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
     }
     if(parsed.length === 0) throw new Error('No se pudo extraer ningún vehículo del archivo.');
     if(!sb) throw new Error('No hay conexión con Supabase.');
- 
+
     statusEl.textContent = 'Subiendo a la base central (puede tardar unos segundos)...';
- 
+
     // Borra la base de vehículos anterior y sube la nueva completa
     const { error: delErr } = await sb.from('vehiculos').delete().neq('placa', '__nunca__');
     if(delErr) throw delErr;
- 
+
     const rowsToInsert = parsed.map(v => ({
       placa: v.placa, unidad: v.unidad, departamento: v.departamento, custodio: v.custodio
     }));
     const { error: insErr } = await sb.from('vehiculos').insert(rowsToInsert);
     if(insErr) throw insErr;
- 
+
     vehiculosDB = parsed;
     updateDbBanner();
     statusEl.textContent = `✓ Base actualizada: ${parsed.length} vehículos, disponible ya para los 3 dispositivos.`;
@@ -1023,7 +1045,7 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
   }
   e.target.value = '';
 });
- 
+
 function renderDbPreview(list){
   const box = document.getElementById('dbPreview');
   const sample = list.slice(0,5);
@@ -1048,7 +1070,7 @@ function renderDbPreview(list){
     </div>
   `;
 }
- 
+
 async function refreshDbStatus(){
   await loadVehiculosDB();
   const statusEl = document.getElementById('dbStatus');
@@ -1061,7 +1083,7 @@ async function refreshDbStatus(){
     statusEl.style.color = 'var(--mute)';
   }
 }
- 
+
 function setDefaultTime(){
   const now = new Date();
   const hh = String(now.getHours()).padStart(2,'0');
@@ -1073,7 +1095,7 @@ function setDefaultTime(){
   document.getElementById('fecha').value = `${yyyy}-${mo}-${dd}`;
 }
 setDefaultTime();
- 
+
 function resizeImage(file){
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
@@ -1096,7 +1118,7 @@ function resizeImage(file){
     reader.readAsDataURL(file);
   });
 }
- 
+
 async function handleFiles(fileList){
   const files = Array.from(fileList).slice(0, 6 - photos.length);
   for(const f of files){
@@ -1107,10 +1129,10 @@ async function handleFiles(fileList){
   }
   renderThumbs();
 }
- 
+
 document.getElementById('cameraInput').addEventListener('change', (e)=> handleFiles(e.target.files));
 document.getElementById('fileInput').addEventListener('change', (e)=> handleFiles(e.target.files));
- 
+
 function renderThumbs(){
   const box = document.getElementById('thumbs');
   box.innerHTML = '';
@@ -1122,13 +1144,13 @@ function renderThumbs(){
   });
 }
 function removePhoto(i){ photos.splice(i,1); renderThumbs(); }
- 
+
 function showToast(msg){
   const host = document.getElementById('toastHost');
   host.innerHTML = `<div class="toast">${msg}</div>`;
   setTimeout(()=>{ host.innerHTML=''; }, 2600);
 }
- 
+
 function showError(msg){
   const el = document.getElementById('formError');
   el.textContent = msg;
@@ -1137,7 +1159,7 @@ function showError(msg){
 function clearError(){
   document.getElementById('formError').style.display = 'none';
 }
- 
+
 async function submitRecord(){
   clearError();
   const placa = document.getElementById('placa').value.trim();
@@ -1153,7 +1175,7 @@ async function submitRecord(){
   const obsPersonalArr = getCheckedValues('obsPersonal');
   const obsVehiculoArr = getCheckedValues('obsVehiculo');
   const observaciones = document.getElementById('observaciones').value.trim();
- 
+
   if(!placa || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajoArr.length || !obsPersonalArr.length || !obsVehiculoArr.length){
     showError('Completa inspector, fecha, hora, placa, custodio, departamento y marca al menos una opción en cada una de las tres listas de observaciones.');
     return;
@@ -1162,21 +1184,21 @@ async function submitRecord(){
     showError('Adjunta al menos una fotografía de la anomalía.');
     return;
   }
- 
+
   const obsTrabajo = obsTrabajoArr.join(', ');
   const obsPersonal = obsPersonalArr.join(', ');
   const obsVehiculo = obsVehiculoArr.join(', ');
- 
+
   if(!sb){
     showError('No hay conexión con Supabase configurada. Ve a la pestaña "Configuración" y pega tus datos antes de registrar.');
     return;
   }
- 
+
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'Guardando...';
- 
+
   const id = 'insp_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
- 
+
   try{
     // Subir cada foto al bucket "fotos" y obtener su URL pública
     const photoUrls = [];
@@ -1188,7 +1210,7 @@ async function submitRecord(){
       const { data: pub } = sb.storage.from('fotos').getPublicUrl(path);
       photoUrls.push(pub.publicUrl);
     }
- 
+
     const { error: insErr } = await sb.from('registros').insert({
       id, placa, unidad, inspector,
       fecha_inspeccion: fechaInspeccion, hora, custodio, departamento, direccion, servidores,
@@ -1196,7 +1218,7 @@ async function submitRecord(){
       observaciones, fotos: photoUrls
     });
     if(insErr) throw insErr;
- 
+
     showToast('✓ Anomalía registrada — Folio ' + id.slice(-7).toUpperCase());
     // reset form
     document.getElementById('placa').value = '';
@@ -1220,7 +1242,7 @@ async function submitRecord(){
   }
   btn.disabled = false; btn.textContent = 'Registrar anomalía';
 }
- 
+
 async function loadRecords(){
   const container = document.getElementById('listContainer');
   container.innerHTML = '<div class="loading">Cargando registros...</div>';
@@ -1233,7 +1255,7 @@ async function loadRecords(){
   try{
     const { data, error } = await sb.from('registros').select('*').order('registrado_en', { ascending: false });
     if(error) throw error;
- 
+
     const records = (data || []).map(row => ({
       id: row.id,
       fechaInspeccion: row.fecha_inspeccion,
@@ -1260,11 +1282,11 @@ async function loadRecords(){
     container.innerHTML = '<div class="empty">No se pudieron cargar los registros. Revisa tu conexión a internet o los datos configurados.</div>';
   }
 }
- 
+
 function updateCountBadge(){
   document.getElementById('countBadge').textContent = allRecords.length;
 }
- 
+
 function renderList(){
   const q = (document.getElementById('search').value || '').toLowerCase();
   const container = document.getElementById('listContainer');
@@ -1304,11 +1326,11 @@ function renderList(){
     `;
   }).join('');
 }
- 
+
 function openLightbox(src){
   document.getElementById('lightboxHost').innerHTML = `<div class="lightbox" onclick="this.remove()"><img src="${src}"></div>`;
 }
- 
+
 // initial load of count badge in background
 loadRecords();
 loadVehiculosDB();
@@ -1316,7 +1338,3 @@ loadOpcionesDropdown();
 </script>
 </body>
 </html>
- 
-
-
-
