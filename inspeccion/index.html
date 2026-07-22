@@ -1,3 +1,88 @@
+
+Claude terminó la respuesta
+prefiero que quede asi, gracias, ahora con el tema de los registros, te recuerdo que tengo [Registro de Revisión in Situ](https://inspeccionescnel.netlify.app/inspeccion/)
+
+
+Registró actualización de URL de despliegue en vivo
+Registró actualización de URL de despliegue en vivo
+Anotado — gracias por recordármelo. Con esa migración a Netlify, el problema de que la red de CNEL bloqueara el dominio de GitHub Pages queda resuelto, ya que Netlify no debería tener ese bloqueo.
+
+
+Added to memory
+Added to memory
+¿Todo funcionando bien desde ese enlace de Netlify? Si necesitas que revisemos algo puntual ahí (que el PIN, la base de vehículos o las listas de observaciones se hayan mantenido bien tras la migración), dime y lo vemos.
+
+cuantos megas utiliza estas aplicaciones?
+
+
+Evaluó tamaño de archivo y preparó síntesis de hallazgos
+Evaluó tamaño de archivo y preparó síntesis de hallazgos
+Buena pregunta, y con sentido dado que se usa en el celular. Aquí el desglose real de tu app "Registro de Revisión in Situ":
+
+Al abrir la app (una sola vez, se queda en caché del navegador después):
+
+El archivo de la app en sí: ~50 KB (muy liviano, es solo texto).
+Tres librerías externas que se cargan desde internet:
+Librería para leer Excel (SheetJS): ~800 KB – 1 MB
+Cliente de Supabase: ~150–250 KB
+Las tipografías (Google Fonts): ~30–50 KB
+Total al abrir por primera vez: aproximadamente 1 – 1.3 MB
+Lo que realmente pesa — las fotos:
+
+Cada foto se comprime automáticamente antes de subirla (a unos 900px de ancho, calidad media), quedando entre 100 y 300 KB por foto.
+Con hasta 6 fotos por registro, un registro completo puede pesar entre 0.6 y 1.8 MB al subirlo.
+Al ver "Ver registros", cada vez que abres esa pestaña se vuelven a descargar las miniaturas de las fotos que se muestran en pantalla — eso también consume datos según cuántos registros haya.
+En resumen: el mayor gasto de datos no es la app en sí, sino las fotos — tanto al subirlas como al volver a verlas en el listado.
+
+¿Quieres que optimice esto para gastar menos megas? Puedo, por ejemplo, comprimir las fotos aún más, o hacer que las miniaturas del listado se vean en baja calidad (y solo cargar la foto en tamaño completo cuando das clic para verla en grande).
+
+no , ya quiero actualizarlo  salgo a las 16 h asi que necesito hacerlo rapido con las pruebas y con el respaldo de ayer
+
+
+Pensando en actualizar un sistema rápidamente usando pruebas y respaldo previo antes de salir
+Pensando en actualizar un sistema rápidamente usando pruebas y respaldo previo antes de salir
+No te preocupes por el respaldo de ayer — este cambio no toca la base de datos para nada, solo el archivo de la app (el diseño de las listas). Tus registros de ayer están intactos en Supabase.
+
+
+Presented file
+Presented file
+Rápido, 3 pasos:
+
+Entra a tu repositorio de GitHub → carpeta inspeccion → abre index.html → clic en el lápiz ✏️ (editar).
+Selecciona todo (Ctrl+A), borra, y pega el contenido del archivo de arriba. Commit changes.
+Espera 1-2 min, luego abre (con Ctrl+Shift+R para forzar recarga):
+https://inspeccionescnel.netlify.app/inspeccion/
+Nota: como ahora usas Netlify (no GitHub Pages) para el enlace final, confírmame algo rápido — ¿ese sitio de Netlify también está conectado al mismo repositorio de GitHub (se actualiza solo cuando haces commit), o subes el archivo por separado directo a Netlify? Así te digo el paso 3 exacto sin perder tiempo.
+
+
+Index
+Código · HTML 
+ok, estoy en el github... entre al index.html, existen muchas cosas pero nada que diga commit changes
+
+
+Identificó que falta activar modo edición para acceder a cambios
+Identificó que falta activar modo edición para acceder a cambios
+Eso es porque probablemente estás viendo el archivo (modo lectura), no editándolo todavía. El botón "Commit changes" solo aparece después de entrar en modo edición y cambiar algo.
+
+Busca esto:
+
+En la parte superior derecha del contenido del archivo, hay unos íconos pequeños — uno de ellos es un lápiz ✏️ (a veces junto a una lupa 🔍 y otros íconos). Ese lápiz es para editar.
+Haz clic en el lápiz.
+Ahora sí el contenido se vuelve editable (un cuadro de texto). Selecciona todo (Ctrl+A) y bórralo.
+Pega el contenido nuevo que te di.
+Ahora sí, al final de la página, aparecerá el botón verde "Commit changes".
+¿Ves ese ícono de lápiz arriba a la derecha del archivo?
+
+
+
+
+
+
+
+Claude es IA y puede cometer errores. Por favor, verifica nuevamente las respuestas.
+
+
+Index · HTML
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -166,9 +251,29 @@
     background:#fff;
   }
   textarea{resize:vertical; min-height:80px;}
+  .check-group{
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:#fbfbfb;
+    padding:6px 4px;
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .check-item{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    padding:7px 10px;
+    font-size:14.5px;
+    color:var(--ink);
+    cursor:pointer;
+    border-radius:5px;
+  }
+  .check-item:hover{background:#f0f1f0;}
+  .check-item input{margin-top:3px; flex-shrink:0;}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media (max-width:480px){.grid2{grid-template-columns:1fr;}}
-
+ 
   .photo-zone{
     border:1.5px dashed var(--line);
     border-radius:9px;
@@ -252,7 +357,7 @@
   }
   @keyframes fadein{from{opacity:0; transform:translate(-50%,8px);} to{opacity:1; transform:translate(-50%,0);}}
   .err{color:var(--danger); font-size:13px; margin-top:4px;}
-
+ 
   /* records list */
   .rec-search{margin-bottom:14px;}
   .rec{
@@ -311,19 +416,19 @@
 </style>
 </head>
 <body>
-
+ 
 <div class="topbar">
   <div class="title">🔧 Registro de Revisión in Situ</div>
   <div class="eyebrow">Control Interno UNGYE</div>
 </div>
-
+ 
 <div class="wrap">
   <div class="tabs">
     <button class="tab active" id="tabForm" onclick="showTab('form')">Nuevo registro</button>
     <button class="tab" id="tabList" onclick="showTab('list')">Ver registros<span class="badge-count" id="countBadge">0</span></button>
     <button class="tab" id="tabConfig" onclick="showTab('config')">Configuración</button>
   </div>
-
+ 
   <!-- FORM VIEW -->
   <div id="viewForm">
     <div id="dbBanner" style="font-size:12.5px; text-align:center; padding:6px; border-radius:6px; margin-bottom:10px; display:none;"></div>
@@ -335,7 +440,7 @@
         </div>
       </div>
       <div id="matchStatus" style="text-align:center; font-size:12.5px; margin:-8px 0 16px; display:none;"></div>
-
+ 
       <div class="grid2">
         <div class="field">
           <label>Unidad</label>
@@ -346,12 +451,12 @@
           <input type="text" id="departamento" placeholder="Se autocompleta según la placa">
         </div>
       </div>
-
+ 
       <div class="field">
         <label>Custodio / Conductor <span class="req">*</span></label>
         <input type="text" id="custodio" placeholder="Se autocompleta según la placa">
       </div>
-
+ 
       <div class="field">
         <label>Inspector <span class="req">*</span></label>
         <select id="inspector">
@@ -361,7 +466,7 @@
           <option>INSP03</option>
         </select>
       </div>
-
+ 
       <div class="grid2">
         <div class="field">
           <label>Fecha <span class="req">*</span></label>
@@ -372,7 +477,7 @@
           <input type="time" id="hora">
         </div>
       </div>
-
+ 
       <div class="grid2">
         <div class="field">
           <label>Dirección</label>
@@ -383,53 +488,22 @@
           <input type="text" id="servidores" placeholder="Nombres de servidores presentes">
         </div>
       </div>
-
+ 
       <div class="field">
-        <label>Observación en el trabajo <span class="req">*</span></label>
-        <select id="obsTrabajo">
-          <option value="">Selecciona una opción...</option>
-          <option>Sin Orden de trabajo/ realizando otro trabajo</option>
-          <option>Sin incidencia (Guardia permanente)</option>
-          <option>Realizando labores ajenas a lo de la empresa</option>
-          <option>Sin Supervisión</option>
-          <option>Sin Orden de Trabajo/Sin incidencia</option>
-          <option>No cuentan con las herramientas</option>
-          <option>OTROS</option>
-          <option>Sin observaciones</option>
-        </select>
+        <label>Observación en el trabajo <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
+        <div class="check-group" id="obsTrabajo"></div>
       </div>
-
+ 
       <div class="field">
-        <label>Observaciones del Personal <span class="req">*</span></label>
-        <select id="obsPersonal">
-          <option value="">Selecciona una opción...</option>
-          <option>Sin credencial</option>
-          <option>Sin EPP</option>
-          <option>En compañía de persona que no pertenece a CNEL</option>
-          <option>No aplica 5 reglas de oro</option>
-          <option>Sin uniforme</option>
-          <option>OTROS</option>
-          <option>Sin observaciones</option>
-        </select>
+        <label>Observaciones del Personal <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
+        <div class="check-group" id="obsPersonal"></div>
       </div>
-
+ 
       <div class="field">
-        <label>Observaciones en el vehículo <span class="req">*</span></label>
-        <select id="obsVehiculo">
-          <option value="">Selecciona una opción...</option>
-          <option>Sin placa</option>
-          <option>Placa tapada</option>
-          <option>Sin logo Institucional</option>
-          <option>Fuera del parqueo autorizado</option>
-          <option>Sin conos</option>
-          <option>No registra en GPS</option>
-          <option>Observación de su estado/registrado en observación</option>
-          <option>Defectos de funcionamiento</option>
-          <option>OTROS</option>
-          <option>Sin observaciones</option>
-        </select>
+        <label>Observaciones en el vehículo <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
+        <div class="check-group" id="obsVehiculo"></div>
       </div>
-
+ 
       <div class="field">
         <label>Fotografía(s) de la anomalía — máximo 6 <span class="req">*</span></label>
         <div class="photo-zone">
@@ -442,17 +516,17 @@
           <div class="thumbs" id="thumbs"></div>
         </div>
       </div>
-
+ 
       <div class="field">
         <label>Observaciones (opcional)</label>
         <textarea id="observaciones" placeholder="Detalle adicional a criterio del revisor..."></textarea>
       </div>
-
+ 
       <div id="formError" class="err" style="display:none;"></div>
       <button class="submit" id="submitBtn" onclick="submitRecord()">Registrar anomalía</button>
     </div>
   </div>
-
+ 
   <!-- LIST VIEW -->
   <div id="viewList" style="display:none;">
     <div class="card">
@@ -464,10 +538,10 @@
       <div id="listContainer"><div class="loading">Cargando registros...</div></div>
     </div>
   </div>
-
+ 
   <!-- CONFIG VIEW (protegida por PIN) -->
   <div id="viewConfig" style="display:none;">
-
+ 
     <!-- Pantalla de bloqueo -->
     <div id="configLock" class="card">
       <div class="section-label">Acceso restringido</div>
@@ -478,7 +552,7 @@
       <div id="configLockError" class="err" style="display:none; margin-bottom:8px;"></div>
       <button class="submit" onclick="unlockConfig()">Ingresar</button>
     </div>
-
+ 
     <!-- Contenido real de configuración -->
     <div id="configContent" style="display:none;">
       <div class="card">
@@ -493,7 +567,29 @@
         <button class="btn-photo" onclick="saveAdminPin()">Guardar PIN</button>
         <div id="pinStatus" style="margin-top:10px; font-size:13.5px;"></div>
       </div>
-
+ 
+      <div class="card" style="margin-top:16px;">
+        <div class="section-label">Listas de observaciones</div>
+        <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+          Escribe una opción por línea. El orden en que las escribas es el mismo orden en que aparecerán
+          en el formulario. Estos cambios se aplican de inmediato para los 3 dispositivos.
+        </p>
+        <div class="field">
+          <label>Observación en el trabajo</label>
+          <textarea id="editObsTrabajo" style="min-height:130px;"></textarea>
+        </div>
+        <div class="field">
+          <label>Observaciones del Personal</label>
+          <textarea id="editObsPersonal" style="min-height:110px;"></textarea>
+        </div>
+        <div class="field">
+          <label>Observaciones en el vehículo</label>
+          <textarea id="editObsVehiculo" style="min-height:150px;"></textarea>
+        </div>
+        <button class="btn-photo" onclick="saveOpcionesDropdown()">Guardar listas</button>
+        <div id="opcionesStatus" style="margin-top:10px; font-size:13.5px;"></div>
+      </div>
+ 
       <div class="card" style="margin-top:16px;">
         <div class="section-label">Base de vehículos</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
@@ -511,7 +607,7 @@
         <div id="dbStatus" style="margin-top:14px; font-size:14px;"></div>
         <div id="dbPreview" style="margin-top:14px;"></div>
       </div>
-
+ 
       <div class="card" style="margin-top:16px;">
         <div class="section-label">Conexión con Supabase</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
@@ -528,7 +624,7 @@
         </div>
         <button class="btn-photo" onclick="saveSupabaseConfig()">Guardar conexión</button>
         <div id="configStatus" style="margin-top:10px; font-size:13.5px;"></div>
-
+ 
         <div class="section-label" style="margin-top:24px;">Cómo obtener estos datos (una sola vez)</div>
         <ol style="font-size:13.5px; color:#333; padding-left:20px; line-height:1.6;">
           <li>Crea un proyecto gratuito en <b>supabase.com</b>.</li>
@@ -540,16 +636,16 @@
     </div>
   </div>
 </div>
-
+ 
 <div id="toastHost"></div>
 <div id="lightboxHost"></div>
 <div id="modalHost"></div>
-
+ 
 <script>
 let photos = []; // {dataUrl}
 let allRecords = [];
 let configUnlocked = false;
-
+ 
 function showTab(tab){
   document.getElementById('tabForm').classList.toggle('active', tab==='form');
   document.getElementById('tabList').classList.toggle('active', tab==='list');
@@ -560,35 +656,36 @@ function showTab(tab){
   if(tab==='list') loadRecords();
   if(tab==='config') openConfigTab();
 }
-
+ 
 function openConfigTab(){
   document.getElementById('configLockInput').value = '';
   document.getElementById('configLockError').style.display = 'none';
-
+ 
   const storedPin = localStorage.getItem('adminPin') || '';
-
+ 
   if(!storedPin){
     // Primera vez: no hay PIN todavía, se deja entrar para configurarlo
     configUnlocked = true;
   }
-
+ 
   if(configUnlocked){
     document.getElementById('configLock').style.display = 'none';
     document.getElementById('configContent').style.display = 'block';
     loadSheetsUrl();
     loadAdminPin();
     refreshDbStatus();
+    loadOpcionesEditors();
   } else {
     document.getElementById('configLock').style.display = 'block';
     document.getElementById('configContent').style.display = 'none';
   }
 }
-
+ 
 function unlockConfig(){
   const entered = document.getElementById('configLockInput').value;
   const errEl = document.getElementById('configLockError');
   const storedPin = localStorage.getItem('adminPin') || '';
-
+ 
   if(!entered || entered !== storedPin){
     errEl.textContent = 'PIN incorrecto.';
     errEl.style.display = 'block';
@@ -597,9 +694,9 @@ function unlockConfig(){
   configUnlocked = true;
   openConfigTab();
 }
-
+ 
 let vehiculosDB = []; // {unidad, placa, placaNorm, departamento, custodio}
-
+ 
 function exportToExcel(){
   if(!allRecords.length){
     showToast('No hay registros para exportar todavía.');
@@ -628,7 +725,7 @@ function exportToExcel(){
   const hoy = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `Registro_Revision_In_Situ_${hoy}.xlsx`);
 }
-
+ 
 function exportVehiculos(){
   if(!vehiculosDB.length){
     showToast('No hay base de vehículos cargada todavía.');
@@ -647,11 +744,11 @@ function exportVehiculos(){
   const hoy = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, `Base_Vehiculos_Respaldo_${hoy}.xlsx`);
 }
-
+ 
 function normPlaca(s){
   return (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'');
 }
-
+ 
 document.getElementById('placa').addEventListener('input', (e)=>{
   e.target.value = e.target.value.toUpperCase();
   tryInstantMatch(e.target.value);
@@ -659,7 +756,7 @@ document.getElementById('placa').addEventListener('input', (e)=>{
 document.getElementById('placa').addEventListener('blur', (e)=>{
   lookupPlaca(e.target.value);
 });
-
+ 
 function tryInstantMatch(placaVal){
   const norm = normPlaca(placaVal);
   const statusEl = document.getElementById('matchStatus');
@@ -677,7 +774,7 @@ function tryInstantMatch(placaVal){
     statusEl.style.display = 'none';
   }
 }
-
+ 
 function lookupPlaca(placaVal){
   const norm = normPlaca(placaVal);
   const statusEl = document.getElementById('matchStatus');
@@ -696,7 +793,7 @@ function lookupPlaca(placaVal){
     statusEl.style.display = 'block';
   }
 }
-
+ 
 function loadAdminPin(){
   const statusEl = document.getElementById('pinStatus');
   const pin = localStorage.getItem('adminPin') || '';
@@ -704,7 +801,7 @@ function loadAdminPin(){
   statusEl.textContent = pin ? '✓ PIN configurado en este dispositivo. No se muestra de nuevo por seguridad.' : 'Aún no has configurado un PIN en este dispositivo.';
   statusEl.style.color = pin ? 'var(--ok)' : 'var(--mute)';
 }
-
+ 
 function saveAdminPin(){
   const pin = document.getElementById('adminPin').value.trim();
   const statusEl = document.getElementById('pinStatus');
@@ -714,7 +811,7 @@ function saveAdminPin(){
   statusEl.style.color = 'var(--ok)';
   document.getElementById('adminPin').value = '';
 }
-
+ 
 function deleteRecord(id){
   const host = document.getElementById('modalHost');
   host.innerHTML = `
@@ -733,16 +830,16 @@ function deleteRecord(id){
   `;
   document.getElementById('modalPinInput').focus();
 }
-
+ 
 function closeModal(){
   document.getElementById('modalHost').innerHTML = '';
 }
-
+ 
 async function confirmDelete(id){
   const entered = document.getElementById('modalPinInput').value;
   const errEl = document.getElementById('modalError');
   const storedPin = localStorage.getItem('adminPin') || '';
-
+ 
   if(!storedPin){
     errEl.textContent = 'Primero debes configurar un PIN de administrador en la pestaña "Configuración", en este dispositivo.';
     errEl.style.display = 'block';
@@ -753,13 +850,13 @@ async function confirmDelete(id){
     errEl.style.display = 'block';
     return;
   }
-
+ 
   if(!sb){
     errEl.textContent = 'No hay conexión configurada con Supabase (pestaña Configuración).';
     errEl.style.display = 'block';
     return;
   }
-
+ 
   try{
     const { error } = await sb.from('registros').delete().eq('id', id);
     if(error) throw error;
@@ -772,15 +869,22 @@ async function confirmDelete(id){
     errEl.style.display = 'block';
   }
 }
-
+ 
 // Conexión por defecto (incluida en el archivo, para que Julio y Lorena
 // no tengan que configurar nada). Solo Luis puede cambiarla editando este
 // archivo, o desde la pestaña Configuración (protegida con PIN).
 const DEFAULT_SUPABASE_URL = 'https://adtrexygljfivgwttczr.supabase.co';
 const DEFAULT_SUPABASE_KEY = 'sb_publishable_p8l32WtIMUpzmopx4-sTyA_HXqcQMTw';
-
+ 
+const DEFAULT_OPCIONES = {
+  obs_trabajo: ["Sin Orden de trabajo/ realizando otro trabajo","Sin incidencia (Guardia permanente)","Realizando labores ajenas a lo de la empresa","Sin Supervisión","Sin Orden de Trabajo/Sin incidencia","No cuentan con las herramientas","OTROS","Sin observaciones"],
+  obs_personal: ["Sin credencial","Sin EPP","En compañía de persona que no pertenece a CNEL","No aplica 5 reglas de oro","Sin uniforme","OTROS","Sin observaciones"],
+  obs_vehiculo: ["Sin placa","Placa tapada","Sin logo Institucional","Fuera del parqueo autorizado","Sin conos","No registra en GPS","Observación de su estado/registrado en observación","Defectos de funcionamiento","OTROS","Sin observaciones"]
+};
+let opcionesDropdown = JSON.parse(JSON.stringify(DEFAULT_OPCIONES));
+ 
 let sb = null; // cliente de Supabase activo
-
+ 
 function initSupabase(){
   const url = localStorage.getItem('supabaseUrl') || DEFAULT_SUPABASE_URL;
   const key = localStorage.getItem('supabaseKey') || DEFAULT_SUPABASE_KEY;
@@ -793,7 +897,7 @@ function initSupabase(){
   }
 }
 initSupabase();
-
+ 
 function loadSheetsUrl(){
   const statusEl = document.getElementById('configStatus');
   const url = localStorage.getItem('supabaseUrl') || DEFAULT_SUPABASE_URL;
@@ -804,7 +908,7 @@ function loadSheetsUrl(){
   statusEl.textContent = ok ? '✓ Conexión activa — los registros se guardan en tu base de Supabase.' : '⚠ Obligatorio: sin esta conexión, la app no puede guardar nada.';
   statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
 }
-
+ 
 function saveSupabaseConfig(){
   const url = document.getElementById('supabaseUrl').value.trim();
   const key = document.getElementById('supabaseKey').value.trim();
@@ -816,7 +920,7 @@ function saveSupabaseConfig(){
   statusEl.textContent = ok ? '✓ Conexión guardada en este dispositivo.' : '⚠ Faltan datos, la app no podrá guardar registros.';
   statusEl.style.color = ok ? 'var(--ok)' : 'var(--danger)';
 }
-
+ 
 async function loadVehiculosDB(){
   if(!sb){ vehiculosDB = []; updateDbBanner(); return; }
   try{
@@ -829,7 +933,7 @@ async function loadVehiculosDB(){
   }catch(e){ console.error(e); vehiculosDB = []; }
   updateDbBanner();
 }
-
+ 
 function updateDbBanner(){
   const banner = document.getElementById('dbBanner');
   if(vehiculosDB.length){
@@ -843,7 +947,94 @@ function updateDbBanner(){
   }
   banner.style.display = 'block';
 }
-
+ 
+async function loadOpcionesDropdown(){
+  if(sb){
+    try{
+      const { data, error } = await sb.from('opciones_dropdown').select('*').eq('id', 1).maybeSingle();
+      if(!error && data){
+        opcionesDropdown = {
+          obs_trabajo: data.obs_trabajo || DEFAULT_OPCIONES.obs_trabajo,
+          obs_personal: data.obs_personal || DEFAULT_OPCIONES.obs_personal,
+          obs_vehiculo: data.obs_vehiculo || DEFAULT_OPCIONES.obs_vehiculo
+        };
+      }
+    }catch(e){ console.error(e); }
+  }
+  renderDropdownOptions();
+}
+ 
+function renderDropdownOptions(){
+  fillCheckGroup('obsTrabajo', opcionesDropdown.obs_trabajo);
+  fillCheckGroup('obsPersonal', opcionesDropdown.obs_personal);
+  fillCheckGroup('obsVehiculo', opcionesDropdown.obs_vehiculo);
+}
+ 
+function fillCheckGroup(groupId, options){
+  const box = document.getElementById(groupId);
+  const previouslyChecked = getCheckedValues(groupId);
+  box.innerHTML = options.map((o, i) => `
+    <label class="check-item">
+      <input type="checkbox" value="${o.replace(/"/g,'&quot;')}" data-group="${groupId}">
+      <span>${o}</span>
+    </label>
+  `).join('');
+  // conservar selección previa si las opciones siguen existiendo
+  box.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    if(previouslyChecked.includes(cb.value)) cb.checked = true;
+  });
+}
+ 
+function getCheckedValues(groupId){
+  return Array.from(document.querySelectorAll(`#${groupId} input[type=checkbox]:checked`)).map(cb => cb.value);
+}
+ 
+function clearCheckGroup(groupId){
+  document.querySelectorAll(`#${groupId} input[type=checkbox]`).forEach(cb => cb.checked = false);
+}
+ 
+function loadOpcionesEditors(){
+  document.getElementById('editObsTrabajo').value = opcionesDropdown.obs_trabajo.join('\n');
+  document.getElementById('editObsPersonal').value = opcionesDropdown.obs_personal.join('\n');
+  document.getElementById('editObsVehiculo').value = opcionesDropdown.obs_vehiculo.join('\n');
+}
+ 
+async function saveOpcionesDropdown(){
+  const statusEl = document.getElementById('opcionesStatus');
+  const parseLines = (id) => document.getElementById(id).value
+    .split('\n').map(l => l.trim()).filter(Boolean);
+ 
+  const nuevas = {
+    obs_trabajo: parseLines('editObsTrabajo'),
+    obs_personal: parseLines('editObsPersonal'),
+    obs_vehiculo: parseLines('editObsVehiculo')
+  };
+ 
+  if(!nuevas.obs_trabajo.length || !nuevas.obs_personal.length || !nuevas.obs_vehiculo.length){
+    statusEl.textContent = 'Cada lista necesita al menos una opción.';
+    statusEl.style.color = 'var(--danger)';
+    return;
+  }
+  if(!sb){
+    statusEl.textContent = 'No hay conexión con Supabase.';
+    statusEl.style.color = 'var(--danger)';
+    return;
+  }
+ 
+  try{
+    const { error } = await sb.from('opciones_dropdown').upsert({ id: 1, ...nuevas });
+    if(error) throw error;
+    opcionesDropdown = nuevas;
+    renderDropdownOptions();
+    statusEl.textContent = '✓ Listas actualizadas para los 3 dispositivos.';
+    statusEl.style.color = 'var(--ok)';
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'No se pudo guardar: ' + (e.message || 'revisa tu conexión.');
+    statusEl.style.color = 'var(--danger)';
+  }
+}
+ 
 function findCol(headers, keywords){
   for(let i=0;i<headers.length;i++){
     const h = (headers[i]||'').toString().toUpperCase();
@@ -851,7 +1042,7 @@ function findCol(headers, keywords){
   }
   return -1;
 }
-
+ 
 document.getElementById('dbFile').addEventListener('change', async (e)=>{
   const file = e.target.files[0];
   if(!file) return;
@@ -864,19 +1055,19 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
     if(rows.length < 2) throw new Error('El archivo no tiene datos suficientes.');
-
+ 
     // Buscar la fila de encabezados (puede no ser la primera fila del archivo)
     let headerRowIdx = rows.findIndex(row =>
       row.some(cell => (cell||'').toString().toUpperCase().includes('PLACA'))
     );
     if(headerRowIdx === -1) throw new Error('No se encontró una columna de PLACA en el archivo.');
-
+ 
     const headers = rows[headerRowIdx];
     const iUnidad = findCol(headers, ['UNIDAD']);
     const iPlaca = findCol(headers, ['PLACA']);
     const iDepto = findCol(headers, ['DEPART']);
     const iCustodio = findCol(headers, ['CUSTODIO','CONDUCTOR']);
-
+ 
     const parsed = [];
     for(let r=headerRowIdx+1; r<rows.length; r++){
       const row = rows[r];
@@ -892,19 +1083,19 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
     }
     if(parsed.length === 0) throw new Error('No se pudo extraer ningún vehículo del archivo.');
     if(!sb) throw new Error('No hay conexión con Supabase.');
-
+ 
     statusEl.textContent = 'Subiendo a la base central (puede tardar unos segundos)...';
-
+ 
     // Borra la base de vehículos anterior y sube la nueva completa
     const { error: delErr } = await sb.from('vehiculos').delete().neq('placa', '__nunca__');
     if(delErr) throw delErr;
-
+ 
     const rowsToInsert = parsed.map(v => ({
       placa: v.placa, unidad: v.unidad, departamento: v.departamento, custodio: v.custodio
     }));
     const { error: insErr } = await sb.from('vehiculos').insert(rowsToInsert);
     if(insErr) throw insErr;
-
+ 
     vehiculosDB = parsed;
     updateDbBanner();
     statusEl.textContent = `✓ Base actualizada: ${parsed.length} vehículos, disponible ya para los 3 dispositivos.`;
@@ -917,7 +1108,7 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
   }
   e.target.value = '';
 });
-
+ 
 function renderDbPreview(list){
   const box = document.getElementById('dbPreview');
   const sample = list.slice(0,5);
@@ -942,7 +1133,7 @@ function renderDbPreview(list){
     </div>
   `;
 }
-
+ 
 async function refreshDbStatus(){
   await loadVehiculosDB();
   const statusEl = document.getElementById('dbStatus');
@@ -955,7 +1146,7 @@ async function refreshDbStatus(){
     statusEl.style.color = 'var(--mute)';
   }
 }
-
+ 
 function setDefaultTime(){
   const now = new Date();
   const hh = String(now.getHours()).padStart(2,'0');
@@ -967,7 +1158,7 @@ function setDefaultTime(){
   document.getElementById('fecha').value = `${yyyy}-${mo}-${dd}`;
 }
 setDefaultTime();
-
+ 
 function resizeImage(file){
   return new Promise((resolve,reject)=>{
     const reader = new FileReader();
@@ -990,7 +1181,7 @@ function resizeImage(file){
     reader.readAsDataURL(file);
   });
 }
-
+ 
 async function handleFiles(fileList){
   const files = Array.from(fileList).slice(0, 6 - photos.length);
   for(const f of files){
@@ -1001,10 +1192,10 @@ async function handleFiles(fileList){
   }
   renderThumbs();
 }
-
+ 
 document.getElementById('cameraInput').addEventListener('change', (e)=> handleFiles(e.target.files));
 document.getElementById('fileInput').addEventListener('change', (e)=> handleFiles(e.target.files));
-
+ 
 function renderThumbs(){
   const box = document.getElementById('thumbs');
   box.innerHTML = '';
@@ -1016,13 +1207,13 @@ function renderThumbs(){
   });
 }
 function removePhoto(i){ photos.splice(i,1); renderThumbs(); }
-
+ 
 function showToast(msg){
   const host = document.getElementById('toastHost');
   host.innerHTML = `<div class="toast">${msg}</div>`;
   setTimeout(()=>{ host.innerHTML=''; }, 2600);
 }
-
+ 
 function showError(msg){
   const el = document.getElementById('formError');
   el.textContent = msg;
@@ -1031,7 +1222,7 @@ function showError(msg){
 function clearError(){
   document.getElementById('formError').style.display = 'none';
 }
-
+ 
 async function submitRecord(){
   clearError();
   const placa = document.getElementById('placa').value.trim();
@@ -1043,30 +1234,34 @@ async function submitRecord(){
   const departamento = document.getElementById('departamento').value.trim();
   const direccion = document.getElementById('direccion').value.trim();
   const servidores = document.getElementById('servidores').value.trim();
-  const obsTrabajo = document.getElementById('obsTrabajo').value;
-  const obsPersonal = document.getElementById('obsPersonal').value;
-  const obsVehiculo = document.getElementById('obsVehiculo').value;
+  const obsTrabajoArr = getCheckedValues('obsTrabajo');
+  const obsPersonalArr = getCheckedValues('obsPersonal');
+  const obsVehiculoArr = getCheckedValues('obsVehiculo');
   const observaciones = document.getElementById('observaciones').value.trim();
-
-  if(!placa || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajo || !obsPersonal || !obsVehiculo){
-    showError('Completa inspector, fecha, hora, placa, custodio, departamento y las tres listas de observaciones.');
+ 
+  if(!placa || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajoArr.length || !obsPersonalArr.length || !obsVehiculoArr.length){
+    showError('Completa inspector, fecha, hora, placa, custodio, departamento y marca al menos una opción en cada una de las tres listas de observaciones.');
     return;
   }
   if(photos.length === 0){
     showError('Adjunta al menos una fotografía de la anomalía.');
     return;
   }
-
+ 
+  const obsTrabajo = obsTrabajoArr.join(', ');
+  const obsPersonal = obsPersonalArr.join(', ');
+  const obsVehiculo = obsVehiculoArr.join(', ');
+ 
   if(!sb){
     showError('No hay conexión con Supabase configurada. Ve a la pestaña "Configuración" y pega tus datos antes de registrar.');
     return;
   }
-
+ 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'Guardando...';
-
+ 
   const id = 'insp_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-
+ 
   try{
     // Subir cada foto al bucket "fotos" y obtener su URL pública
     const photoUrls = [];
@@ -1078,7 +1273,7 @@ async function submitRecord(){
       const { data: pub } = sb.storage.from('fotos').getPublicUrl(path);
       photoUrls.push(pub.publicUrl);
     }
-
+ 
     const { error: insErr } = await sb.from('registros').insert({
       id, placa, unidad, inspector,
       fecha_inspeccion: fechaInspeccion, hora, custodio, departamento, direccion, servidores,
@@ -1086,7 +1281,7 @@ async function submitRecord(){
       observaciones, fotos: photoUrls
     });
     if(insErr) throw insErr;
-
+ 
     showToast('✓ Anomalía registrada — Folio ' + id.slice(-7).toUpperCase());
     // reset form
     document.getElementById('placa').value = '';
@@ -1096,9 +1291,9 @@ async function submitRecord(){
     document.getElementById('departamento').value = '';
     document.getElementById('direccion').value = '';
     document.getElementById('servidores').value = '';
-    document.getElementById('obsTrabajo').value = '';
-    document.getElementById('obsPersonal').value = '';
-    document.getElementById('obsVehiculo').value = '';
+    clearCheckGroup('obsTrabajo');
+    clearCheckGroup('obsPersonal');
+    clearCheckGroup('obsVehiculo');
     document.getElementById('observaciones').value = '';
     setDefaultTime();
     document.getElementById('matchStatus').style.display = 'none';
@@ -1110,7 +1305,7 @@ async function submitRecord(){
   }
   btn.disabled = false; btn.textContent = 'Registrar anomalía';
 }
-
+ 
 async function loadRecords(){
   const container = document.getElementById('listContainer');
   container.innerHTML = '<div class="loading">Cargando registros...</div>';
@@ -1123,7 +1318,7 @@ async function loadRecords(){
   try{
     const { data, error } = await sb.from('registros').select('*').order('registrado_en', { ascending: false });
     if(error) throw error;
-
+ 
     const records = (data || []).map(row => ({
       id: row.id,
       fechaInspeccion: row.fecha_inspeccion,
@@ -1150,11 +1345,11 @@ async function loadRecords(){
     container.innerHTML = '<div class="empty">No se pudieron cargar los registros. Revisa tu conexión a internet o los datos configurados.</div>';
   }
 }
-
+ 
 function updateCountBadge(){
   document.getElementById('countBadge').textContent = allRecords.length;
 }
-
+ 
 function renderList(){
   const q = (document.getElementById('search').value || '').toLowerCase();
   const container = document.getElementById('listContainer');
@@ -1194,14 +1389,19 @@ function renderList(){
     `;
   }).join('');
 }
-
+ 
 function openLightbox(src){
   document.getElementById('lightboxHost').innerHTML = `<div class="lightbox" onclick="this.remove()"><img src="${src}"></div>`;
 }
-
+ 
 // initial load of count badge in background
 loadRecords();
 loadVehiculosDB();
+loadOpcionesDropdown();
 </script>
 </body>
 </html>
+ 
+
+
+
