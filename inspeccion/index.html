@@ -12,6 +12,8 @@
   :root{
     --navy:#16273D;
     --navy-2:#24405F;
+    --accent:#0284C7;
+    --accent-dark:#075985;
     --safety:#F2A73B;
     --paper:#F5F6F4;
     --ink:#1C1C1C;
@@ -29,7 +31,7 @@
     -webkit-font-smoothing:antialiased;
   }
   .topbar{
-    background:var(--navy);
+    background:var(--accent);
     color:#fff;
     padding:16px 20px;
     display:flex;
@@ -47,12 +49,25 @@
     align-items:center;
     gap:10px;
   }
+  .topbar .bolt{
+    font-size:34px;
+    line-height:1;
+  }
+  .topbar-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-shrink:0;
+  }
+  .seal{flex-shrink:0;}
   .topbar .eyebrow{
     font-size:11px;
     color:#C7D1DE;
     text-transform:uppercase;
     letter-spacing:1.5px;
     font-weight:600;
+    line-height:1.4;
+    text-align:right;
   }
   .wrap{
     max-width:640px;
@@ -83,7 +98,7 @@
     border:none;
   }
   .tab.active{
-    background:var(--navy);
+    background:var(--accent);
     color:#fff;
   }
   .card{
@@ -115,14 +130,14 @@
     box-shadow:0 2px 0 rgba(0,0,0,0.06);
   }
   .plate-strip{
-    background:var(--navy);
+    background:var(--accent);
     color:#fff;
     text-align:center;
     font-family:'Barlow Condensed',sans-serif;
-    font-size:11px;
+    font-size:14px;
     letter-spacing:2px;
     font-weight:700;
-    padding:3px 0;
+    padding:4px 0;
   }
   .plate input{
     width:100%;
@@ -138,6 +153,37 @@
     background:transparent;
   }
   .plate input:focus{outline:none;}
+  .field label.label-badge{
+    display:inline-block;
+    background:var(--accent);
+    color:#fff;
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    padding:6px 13px;
+    border-radius:6px;
+    margin-bottom:8px;
+  }
+  .field label.label-badge .req{color:var(--safety);}
+  .field .hint-text{
+    display:block;
+    font-size:12.5px;
+    font-weight:400;
+    text-transform:none;
+    color:var(--mute);
+    margin:-4px 0 8px;
+  }
+  .field label.label-bold{
+    display:block;
+    font-weight:700;
+    color:var(--ink);
+    font-size:14.5px;
+    text-transform:none;
+    letter-spacing:0;
+    margin-bottom:6px;
+  }
   .plate input::placeholder{color:#B8C2CE; letter-spacing:3px;}
   .field{margin-bottom:16px;}
   .field label{
@@ -174,18 +220,47 @@
     max-height:220px;
     overflow-y:auto;
   }
-  .check-item{
+  .field .check-item{
     display:flex;
     align-items:flex-start;
-    gap:8px;
-    padding:7px 10px;
-    font-size:14.5px;
+    gap:7px;
+    padding:6px 9px;
+    font-size:13px;
     color:var(--ink);
     cursor:pointer;
     border-radius:5px;
+    text-transform:lowercase;
   }
+  .check-item span::first-letter{text-transform:uppercase;}
   .check-item:hover{background:#f0f1f0;}
-  .check-item input{margin-top:3px; flex-shrink:0;}
+  .check-item input{margin-top:2px; flex-shrink:0; transform:scale(0.92);}
+  .check-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    max-height:none;
+    overflow-y:visible;
+    background:transparent;
+    border:none;
+    padding:0;
+  }
+  .check-grid .check-item{
+    border:1.5px solid var(--line);
+    border-radius:7px;
+    background:#fff;
+    padding:8px 9px;
+    align-items:center;
+  }
+  .check-grid .check-item:hover{background:#f7f9fb; border-color:#B9C2CC;}
+  .check-grid .check-item:has(input:checked){
+    border-color:var(--accent);
+    background:var(--accent);
+  }
+  .check-grid .check-item:has(input:checked) span{
+    color:#fff;
+    font-weight:700;
+  }
+  @media (max-width:300px){.check-grid{grid-template-columns:1fr;}}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media (max-width:480px){.grid2{grid-template-columns:1fr;}}
 
@@ -201,7 +276,7 @@
     display:inline-flex;
     align-items:center;
     gap:7px;
-    background:var(--navy);
+    background:var(--accent);
     color:#fff;
     border:none;
     padding:9px 16px;
@@ -211,7 +286,7 @@
     font-size:14px;
     cursor:pointer;
   }
-  .btn-photo:hover{background:var(--navy-2);}
+  .btn-photo:hover{background:var(--accent-dark);}
   .thumbs{
     display:flex;
     flex-wrap:wrap;
@@ -333,8 +408,17 @@
 <body>
 
 <div class="topbar">
-  <div class="title">🔧 Registro de Revisión in Situ</div>
-  <div class="eyebrow">Control Interno UNGYE</div>
+  <div class="title"><span class="bolt">⚡</span> Registro de Revisión in Situ</div>
+  <div class="topbar-right">
+    <svg class="seal" width="46" height="46" viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="23" cy="23" r="21" fill="none" stroke="#fff" stroke-width="2"/>
+      <circle cx="23" cy="23" r="17" fill="none" stroke="#fff" stroke-width="1"/>
+      <text x="23" y="19" text-anchor="middle" font-size="5.3" font-weight="700" fill="#fff" font-family="Barlow Condensed, sans-serif" letter-spacing="0.3">CONTROL</text>
+      <text x="23" y="26" text-anchor="middle" font-size="5.3" font-weight="700" fill="#fff" font-family="Barlow Condensed, sans-serif" letter-spacing="0.3">INTERNO</text>
+      <path d="M18 30 L21.5 33.5 L29 26" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="eyebrow">Control Interno<br>UNGYE</div>
+  </div>
 </div>
 
 <div class="wrap">
@@ -350,7 +434,7 @@
     <div class="card">
       <div class="plate-block">
         <div class="plate">
-          <div class="plate-strip">PLACA</div>
+          <div class="plate-strip">PLACA #</div>
           <input type="text" id="placa" placeholder="ABC-1234" maxlength="10">
         </div>
       </div>
@@ -372,13 +456,6 @@
         <input type="text" id="custodio" placeholder="Se autocompleta según la placa">
       </div>
 
-      <div class="field">
-        <label>Inspector <span class="req">*</span></label>
-        <select id="inspector">
-          <option value="">Selecciona...</option>
-        </select>
-      </div>
-
       <div class="grid2">
         <div class="field">
           <label>Fecha <span class="req">*</span></label>
@@ -392,32 +469,35 @@
 
       <div class="grid2">
         <div class="field">
-          <label>Dirección</label>
+          <label class="label-badge">Dirección</label>
           <input type="text" id="direccion" placeholder="Lugar de la inspección">
         </div>
         <div class="field">
-          <label>Servidores presentes</label>
+          <label class="label-badge">Servidores presentes</label>
           <input type="text" id="servidores" placeholder="Nombres de servidores presentes">
         </div>
       </div>
 
       <div class="field">
-        <label>Observación en el trabajo <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
-        <div class="check-group" id="obsTrabajo"></div>
+        <label class="label-badge">Observaciones del Personal <span class="req">*</span></label>
+        <span class="hint-text">(puedes marcar más de una)</span>
+        <div class="check-group check-grid" id="obsPersonal"></div>
       </div>
 
       <div class="field">
-        <label>Observaciones del Personal <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
-        <div class="check-group" id="obsPersonal"></div>
+        <label class="label-badge">Observación en el trabajo <span class="req">*</span></label>
+        <span class="hint-text">(puedes marcar más de una)</span>
+        <div class="check-group check-grid" id="obsTrabajo"></div>
       </div>
 
       <div class="field">
-        <label>Observaciones en el vehículo <span class="req">*</span> <span style="font-weight:400; color:var(--mute); text-transform:none;">(puedes marcar más de una)</span></label>
-        <div class="check-group" id="obsVehiculo"></div>
+        <label class="label-badge">Observaciones en el vehículo <span class="req">*</span></label>
+        <span class="hint-text">(puedes marcar más de una)</span>
+        <div class="check-group check-grid" id="obsVehiculo"></div>
       </div>
 
       <div class="field">
-        <label>Fotografía(s) de la anomalía — máximo 6 <span class="req">*</span></label>
+        <label class="label-badge">Fotografía(s) de la anomalía — máximo 6 <span class="req">*</span></label>
         <div class="photo-zone">
           <div class="btns">
             <button class="btn-photo" onclick="document.getElementById('cameraInput').click()">📷 Tomar foto</button>
@@ -430,8 +510,15 @@
       </div>
 
       <div class="field">
-        <label>Observaciones (opcional)</label>
+        <label class="label-badge">Observaciones (opcional)</label>
         <textarea id="observaciones" placeholder="Detalle adicional a criterio del revisor..."></textarea>
+      </div>
+
+      <div class="field">
+        <label class="label-badge">Inspector de Control Interno <span class="req">*</span></label>
+        <select id="inspector">
+          <option value="">Selecciona...</option>
+        </select>
       </div>
 
       <div id="formError" class="err" style="display:none;"></div>
@@ -581,16 +668,11 @@ function showTab(tab){
   if(tab==='config') openConfigTab();
 }
 
+const DEFAULT_ADMIN_PIN = '061630';
+
 function openConfigTab(){
   document.getElementById('configLockInput').value = '';
   document.getElementById('configLockError').style.display = 'none';
-
-  const storedPin = localStorage.getItem('adminPin') || '';
-
-  if(!storedPin){
-    // Primera vez: no hay PIN todavía, se deja entrar para configurarlo
-    configUnlocked = true;
-  }
 
   if(configUnlocked){
     document.getElementById('configLock').style.display = 'none';
@@ -608,10 +690,10 @@ function openConfigTab(){
 function unlockConfig(){
   const entered = document.getElementById('configLockInput').value;
   const errEl = document.getElementById('configLockError');
-  const storedPin = localStorage.getItem('adminPin') || '';
+  const storedPin = localStorage.getItem('adminPin') || DEFAULT_ADMIN_PIN;
 
   if(!entered || entered !== storedPin){
-    errEl.textContent = 'PIN incorrecto.';
+    errEl.textContent = 'Clave incorrecta.';
     errEl.style.display = 'block';
     return;
   }
@@ -720,10 +802,10 @@ function lookupPlaca(placaVal){
 
 function loadAdminPin(){
   const statusEl = document.getElementById('pinStatus');
-  const pin = localStorage.getItem('adminPin') || '';
+  const pin = localStorage.getItem('adminPin');
   document.getElementById('adminPin').value = '';
-  statusEl.textContent = pin ? '✓ PIN configurado en este dispositivo. No se muestra de nuevo por seguridad.' : 'Aún no has configurado un PIN en este dispositivo.';
-  statusEl.style.color = pin ? 'var(--ok)' : 'var(--mute)';
+  statusEl.textContent = pin ? '✓ Clave personalizada activa en este dispositivo.' : 'Usando la clave fija predeterminada (061630). Puedes cambiarla aquí si quieres.';
+  statusEl.style.color = 'var(--mute)';
 }
 
 function saveAdminPin(){
@@ -762,15 +844,10 @@ function closeModal(){
 async function confirmDelete(id){
   const entered = document.getElementById('modalPinInput').value;
   const errEl = document.getElementById('modalError');
-  const storedPin = localStorage.getItem('adminPin') || '';
+  const storedPin = localStorage.getItem('adminPin') || DEFAULT_ADMIN_PIN;
 
-  if(!storedPin){
-    errEl.textContent = 'Primero debes configurar un PIN de administrador en la pestaña "Configuración", en este dispositivo.';
-    errEl.style.display = 'block';
-    return;
-  }
   if(!entered || entered !== storedPin){
-    errEl.textContent = 'PIN incorrecto. Intenta de nuevo.';
+    errEl.textContent = 'Clave incorrecta. Intenta de nuevo.';
     errEl.style.display = 'block';
     return;
   }
