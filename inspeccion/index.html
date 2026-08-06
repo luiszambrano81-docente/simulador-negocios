@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --navy:#16273D;
@@ -21,6 +22,12 @@
     --danger:#C1443D;
     --ok:#2F7A52;
     --mute:#6B7480;
+  }
+  /* Al elegir "Contratista", todo lo que usa el color de acento (azul) cambia a un rojo apagado,
+     como señal visual de que se está registrando una unidad contratista */
+  body.tipo-contratista{
+    --accent:#9B3A34;
+    --accent-dark:#732A25;
   }
   *{box-sizing:border-box;}
   body{
@@ -234,6 +241,28 @@
   .check-item span::first-letter{text-transform:uppercase;}
   .check-item:hover{background:#f0f1f0;}
   .check-item input{margin-top:2px; flex-shrink:0; transform:scale(0.92);}
+  .tipo-toggle{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .tipo-btn{
+    border:1.5px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:11px 8px;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .tipo-btn:hover{background:#f7f9fb;}
+  .tipo-btn.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
   .check-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -440,20 +469,34 @@
       </div>
       <div id="matchStatus" style="text-align:center; font-size:12.5px; margin:-8px 0 16px; display:none;"></div>
 
+      <div class="field">
+        <label class="label-badge">Tipo de unidad <span class="req">*</span></label>
+        <div class="tipo-toggle">
+          <button type="button" class="tipo-btn" id="btnTipoPropia" onclick="selectTipoUnidad('Propia')">🏢 Propia</button>
+          <button type="button" class="tipo-btn" id="btnTipoContratista" onclick="selectTipoUnidad('Contratista')">🤝 Contratista</button>
+        </div>
+        <input type="hidden" id="tipoUnidad" value="">
+      </div>
+
       <div class="grid2">
         <div class="field">
           <label>Unidad</label>
           <input type="text" id="unidad" placeholder="Se autocompleta según la placa">
         </div>
         <div class="field">
-          <label>Departamento <span class="req">*</span></label>
+          <label id="labelDepartamento">Departamento <span class="req">*</span></label>
           <input type="text" id="departamento" placeholder="Se autocompleta según la placa">
         </div>
       </div>
 
       <div class="field">
-        <label>Custodio / Conductor <span class="req">*</span></label>
+        <label>Conductor <span class="req">*</span></label>
         <input type="text" id="custodio" placeholder="Se autocompleta según la placa">
+      </div>
+
+      <div class="field" id="empresaField" style="display:none;">
+        <label>Empresa contratista</label>
+        <input type="text" id="empresaContratista" placeholder="Se autocompleta según la placa, o ingrésala manualmente">
       </div>
 
       <div class="grid2">
@@ -467,12 +510,12 @@
         </div>
       </div>
 
-      <div class="grid2">
+      <div class="grid2" id="direccionServidoresGrid">
         <div class="field">
-          <label class="label-badge">Dirección</label>
+          <label class="label-badge" id="labelDireccion">Dirección</label>
           <input type="text" id="direccion" placeholder="Lugar de la inspección">
         </div>
-        <div class="field">
+        <div class="field" id="servidoresField">
           <label class="label-badge">Servidores presentes</label>
           <input type="text" id="servidores" placeholder="Nombres de servidores presentes">
         </div>
@@ -529,11 +572,27 @@
   <!-- LIST VIEW -->
   <div id="viewList" style="display:none;">
     <div class="card">
-      <div style="display:flex; gap:10px; margin-bottom:14px;">
-        <input type="text" class="rec-search" id="search" placeholder="Buscar por placa, custodio o departamento..." oninput="renderList()"
-          style="flex:1; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:14px;">
-        <button class="btn-photo" onclick="exportToExcel()" style="white-space:nowrap;">📥 Exportar Excel</button>
+      <input type="text" class="rec-search" id="search" placeholder="Buscar por placa, custodio o departamento..." oninput="renderList()"
+        style="width:100%; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:14px; margin-bottom:10px;">
+
+      <div style="display:flex; gap:10px; align-items:end; margin-bottom:14px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:130px;">
+          <label style="display:block; font-size:11.5px; color:var(--mute); margin-bottom:3px;">Desde</label>
+          <input type="date" id="filterDesde" oninput="renderList()" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:8px 10px; font-size:13.5px;">
+        </div>
+        <div style="flex:1; min-width:130px;">
+          <label style="display:block; font-size:11.5px; color:var(--mute); margin-bottom:3px;">Hasta</label>
+          <input type="date" id="filterHasta" oninput="renderList()" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:8px 10px; font-size:13.5px;">
+        </div>
+        <button class="btn-photo" onclick="document.getElementById('filterDesde').value=''; document.getElementById('filterHasta').value=''; renderList();" style="white-space:nowrap;">Quitar fechas</button>
       </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+        <button class="btn-photo" onclick="exportToExcel()" style="white-space:nowrap;">📥 Exportar Excel</button>
+        <button class="btn-photo" id="zipBtn" onclick="downloadPhotosZip()" style="white-space:nowrap;">🖼️ Descargar fotos (ZIP)</button>
+      </div>
+      <div id="zipStatus" style="font-size:13px; color:var(--mute); margin-bottom:10px;"></div>
+
       <div id="listContainer"><div class="loading">Cargando registros...</div></div>
     </div>
   </div>
@@ -584,8 +643,13 @@
         <div class="section-label">Listas de observaciones</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
           Escribe una opción por línea. El orden en que las escribas es el mismo orden en que aparecerán
-          en el formulario. Estos cambios se aplican de inmediato para los 3 dispositivos.
+          en el formulario. Como las revisiones a unidades propias y contratistas son distintas, cada una
+          tiene su propio juego de listas — cambia la pestaña para editar cada una.
         </p>
+        <div class="tipo-toggle" style="margin-bottom:14px;">
+          <button type="button" class="tipo-btn active" id="btnEditorPropia" onclick="switchEditorTipo('Propia')">🏢 Unidades propias</button>
+          <button type="button" class="tipo-btn" id="btnEditorContratista" onclick="switchEditorTipo('Contratista')">🤝 Contratistas</button>
+        </div>
         <div class="field">
           <label>Observación en el trabajo</label>
           <textarea id="editObsTrabajo" style="min-height:130px;"></textarea>
@@ -602,21 +666,41 @@
       </div>
 
       <div class="card" style="margin-top:16px;">
-        <div class="section-label">Base de vehículos</div>
+        <div class="section-label">🏢 Base de vehículos — Propios</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
           Sube el Excel con las columnas <b>UNIDAD, PLACAS, DEPARTAMENTO, CUSTODIO/CONDUCTOR</b> (en cualquier orden).
-          Al subir un archivo nuevo, reemplaza la base anterior. <b>Esta base es central</b> — solo tú la subes aquí
-          (protegido con tu PIN) y Julio y Lorena la ven automáticamente, sin hacer nada.
+          Al subir un archivo nuevo, reemplaza solo la base de vehículos <b>propios</b> — no afecta la base de
+          contratistas. <b>Esta base es central</b> — solo tú la subes aquí (protegido con tu PIN) y Julio y Lorena
+          la ven automáticamente, sin hacer nada.
         </p>
         <div class="photo-zone">
           <div class="btns">
-            <button class="btn-photo" onclick="document.getElementById('dbFile').click()">📊 Seleccionar archivo Excel/CSV</button>
-            <button class="btn-photo" onclick="exportVehiculos()">📥 Descargar respaldo actual</button>
+            <button class="btn-photo" onclick="document.getElementById('dbFilePropia').click()">📊 Seleccionar archivo Excel/CSV</button>
+            <button class="btn-photo" onclick="exportVehiculos('Propia')">📥 Descargar respaldo actual</button>
           </div>
-          <input type="file" id="dbFile" accept=".xlsx,.xls,.csv" style="display:none">
+          <input type="file" id="dbFilePropia" accept=".xlsx,.xls,.csv" style="display:none">
         </div>
-        <div id="dbStatus" style="margin-top:14px; font-size:14px;"></div>
-        <div id="dbPreview" style="margin-top:14px;"></div>
+        <div id="dbStatusPropia" style="margin-top:14px; font-size:14px;"></div>
+        <div id="dbPreviewPropia" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="section-label">🤝 Base de vehículos — Contratistas</div>
+        <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
+          Sube el Excel con las columnas <b>UNIDAD, PLACAS, DEPARTAMENTO, CUSTODIO/CONDUCTOR</b> y, opcionalmente,
+          <b>EMPRESA</b> (el nombre de la compañía contratista). Puedes subir aquí la base de una o varias empresas
+          contratistas juntas en un mismo archivo. Al subir un archivo nuevo, reemplaza solo esta base de
+          <b>contratistas</b> — no afecta la de vehículos propios.
+        </p>
+        <div class="photo-zone">
+          <div class="btns">
+            <button class="btn-photo" onclick="document.getElementById('dbFileContratista').click()">📊 Seleccionar archivo Excel/CSV</button>
+            <button class="btn-photo" onclick="exportVehiculos('Contratista')">📥 Descargar respaldo actual</button>
+          </div>
+          <input type="file" id="dbFileContratista" accept=".xlsx,.xls,.csv" style="display:none">
+        </div>
+        <div id="dbStatusContratista" style="margin-top:14px; font-size:14px;"></div>
+        <div id="dbPreviewContratista" style="margin-top:14px;"></div>
       </div>
 
       <div class="card" style="margin-top:16px;">
@@ -664,7 +748,8 @@ function showTab(tab){
   document.getElementById('viewForm').style.display = tab==='form' ? 'block':'none';
   document.getElementById('viewList').style.display = tab==='list' ? 'block':'none';
   document.getElementById('viewConfig').style.display = tab==='config' ? 'block':'none';
-  if(tab==='list') loadRecords();
+  if(tab==='list'){ document.body.classList.remove('tipo-contratista'); loadRecords(); }
+  if(tab==='form'){ document.body.classList.toggle('tipo-contratista', currentTipo === 'Contratista'); }
   if(tab==='config') openConfigTab();
 }
 
@@ -680,6 +765,10 @@ function openConfigTab(){
     loadSheetsUrl();
     loadAdminPin();
     refreshDbStatus();
+    editorTipo = 'Propia';
+    document.getElementById('btnEditorPropia').classList.add('active');
+    document.getElementById('btnEditorContratista').classList.remove('active');
+    document.body.classList.remove('tipo-contratista');
     loadOpcionesEditors();
   } else {
     document.getElementById('configLock').style.display = 'block';
@@ -704,18 +793,21 @@ function unlockConfig(){
 let vehiculosDB = []; // {unidad, placa, placaNorm, departamento, custodio}
 
 function exportToExcel(){
-  if(!allRecords.length){
+  const data = currentFiltered.length ? currentFiltered : allRecords;
+  if(!data.length){
     showToast('No hay registros para exportar todavía.');
     return;
   }
-  const rows = allRecords.map(r => ({
+  const rows = data.map(r => ({
     'Fecha inspección': r.fechaInspeccion || '',
     'Hora': r.hora || '',
     'Inspector': r.inspector || '',
     'Placa': r.placa || '',
     'Unidad': r.unidad || '',
+    'Tipo de unidad': r.tipoUnidad || 'Propia',
+    'Empresa contratista': r.empresaContratista || '',
     'Departamento': r.departamento || '',
-    'Custodio/Conductor': r.custodio || '',
+    'Conductor': r.custodio || '',
     'Dirección': r.direccion || '',
     'Servidores presentes': r.servidores || '',
     'Observación en el trabajo': r.obsTrabajo || '',
@@ -732,23 +824,74 @@ function exportToExcel(){
   XLSX.writeFile(wb, `Registro_Revision_In_Situ_${hoy}.xlsx`);
 }
 
-function exportVehiculos(){
-  if(!vehiculosDB.length){
-    showToast('No hay base de vehículos cargada todavía.');
+async function downloadPhotosZip(){
+  const data = currentFiltered.length ? currentFiltered : allRecords;
+  const withPhotos = data.filter(r => (r.photos||[]).length > 0);
+  if(!withPhotos.length){
+    showToast('No hay fotos para descargar en el período seleccionado.');
     return;
   }
-  const rows = vehiculosDB.map(v => ({
+
+  const btn = document.getElementById('zipBtn');
+  const statusEl = document.getElementById('zipStatus');
+  btn.disabled = true;
+  const totalFotos = withPhotos.reduce((sum, r) => sum + r.photos.length, 0);
+  let hechas = 0;
+
+  try{
+    const zip = new JSZip();
+    for(const r of withPhotos){
+      const carpeta = `${r.fechaInspeccion || 'sin-fecha'}_${r.placa || 'sin-placa'}`;
+      for(let i=0; i<r.photos.length; i++){
+        try{
+          const resp = await fetch(r.photos[i]);
+          const blob = await resp.blob();
+          zip.file(`${carpeta}/foto_${i+1}.jpg`, blob);
+        }catch(e){ console.error('No se pudo descargar una foto', e); }
+        hechas++;
+        statusEl.textContent = `Descargando fotos... (${hechas} de ${totalFotos})`;
+      }
+    }
+    statusEl.textContent = 'Comprimiendo archivo ZIP...';
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    const desde = document.getElementById('filterDesde').value;
+    const hasta = document.getElementById('filterHasta').value;
+    const rango = (desde || hasta) ? `_${desde||'inicio'}_a_${hasta||'hoy'}` : '_completo';
+    a.href = url;
+    a.download = `Fotos_Revision_In_Situ${rango}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    statusEl.textContent = `✓ Listo — ${totalFotos} fotos descargadas.`;
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'No se pudo generar el archivo ZIP.';
+  }
+  btn.disabled = false;
+}
+
+function exportVehiculos(tipoFijo){
+  const lista = vehiculosDB.filter(v => (v.tipo || 'Propia') === tipoFijo);
+  if(!lista.length){
+    showToast(`No hay vehículos ${tipoFijo === 'Contratista' ? 'contratistas' : 'propios'} cargados todavía.`);
+    return;
+  }
+  const rows = lista.map(v => ({
     'UNIDAD': v.unidad || '',
     'PLACAS': v.placa || '',
     'DEPARTAMENTO': v.departamento || '',
-    'CUSTODIO/CONDUCTOR': v.custodio || ''
+    'CONDUCTOR': v.custodio || '',
+    ...(tipoFijo === 'Contratista' ? { 'EMPRESA': v.empresa || '' } : {})
   }));
   const ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = Object.keys(rows[0]).map(k => ({wch: Math.max(14, k.length+2)}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Vehiculos');
   const hoy = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, `Base_Vehiculos_Respaldo_${hoy}.xlsx`);
+  XLSX.writeFile(wb, `Base_Vehiculos_${tipoFijo}_Respaldo_${hoy}.xlsx`);
 }
 
 function normPlaca(s){
@@ -772,7 +915,9 @@ function tryInstantMatch(placaVal){
     document.getElementById('unidad').value = match.unidad;
     document.getElementById('departamento').value = match.departamento;
     document.getElementById('custodio').value = match.custodio;
-    statusEl.textContent = '✓ Coincidencia encontrada en la base de vehículos';
+    document.getElementById('empresaContratista').value = match.empresa || '';
+    selectTipoUnidad(match.tipo === 'Contratista' ? 'Contratista' : 'Propia');
+    statusEl.textContent = `✓ Coincidencia encontrada (unidad ${match.tipo || 'Propia'})`;
     statusEl.style.color = 'var(--ok)';
     statusEl.style.display = 'block';
   } else {
@@ -790,13 +935,18 @@ function lookupPlaca(placaVal){
     document.getElementById('unidad').value = match.unidad;
     document.getElementById('departamento').value = match.departamento;
     document.getElementById('custodio').value = match.custodio;
-    statusEl.textContent = '✓ Coincidencia encontrada en la base de vehículos';
+    document.getElementById('empresaContratista').value = match.empresa || '';
+    selectTipoUnidad(match.tipo === 'Contratista' ? 'Contratista' : 'Propia');
+    statusEl.textContent = `✓ Coincidencia encontrada (unidad ${match.tipo || 'Propia'})`;
     statusEl.style.color = 'var(--ok)';
     statusEl.style.display = 'block';
   } else {
-    statusEl.textContent = vehiculosDB.length ? '⚠ Placa no encontrada — completa los datos manualmente' : '⚠ Aún no has cargado la base de vehículos (pestaña "Configuración")';
+    statusEl.textContent = vehiculosDB.length ? '⚠ Placa no encontrada — completa Unidad, Departamento y Conductor manualmente abajo, y confirma el tipo de unidad' : '⚠ Aún no has cargado la base de vehículos (pestaña "Configuración")';
     statusEl.style.color = 'var(--danger)';
     statusEl.style.display = 'block';
+    if(vehiculosDB.length && !document.getElementById('unidad').value){
+      document.getElementById('unidad').focus();
+    }
   }
 }
 
@@ -841,6 +991,94 @@ function closeModal(){
   document.getElementById('modalHost').innerHTML = '';
 }
 
+function preCheckGroup(containerId, valuesStr){
+  const vals = (valuesStr || '').split(',').map(s => s.trim()).filter(Boolean);
+  document.querySelectorAll(`#${containerId} input[type=checkbox]`).forEach(cb => {
+    if(vals.includes(cb.value)) cb.checked = true;
+  });
+}
+
+function openEditModal(id){
+  const r = allRecords.find(x => x.id === id);
+  if(!r) return;
+  const tipo = r.tipoUnidad || 'Propia';
+  const k = keysForTipo(tipo);
+  const host = document.getElementById('modalHost');
+  host.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-box" style="max-width:420px; max-height:88vh; overflow-y:auto;">
+        <div class="section-label" style="margin-top:0;">Editar observaciones — ${r.placa} (${tipo})</div>
+        <div class="field">
+          <label style="font-size:12px; color:var(--mute); text-transform:uppercase; font-weight:600; display:block; margin-bottom:6px;">Observación en el trabajo</label>
+          <div class="check-group check-grid" id="editModalTrabajo"></div>
+        </div>
+        <div class="field">
+          <label style="font-size:12px; color:var(--mute); text-transform:uppercase; font-weight:600; display:block; margin-bottom:6px;">Observaciones del Personal</label>
+          <div class="check-group check-grid" id="editModalPersonal"></div>
+        </div>
+        <div class="field">
+          <label style="font-size:12px; color:var(--mute); text-transform:uppercase; font-weight:600; display:block; margin-bottom:6px;">Observaciones en el vehículo</label>
+          <div class="check-group check-grid" id="editModalVehiculo"></div>
+        </div>
+        <div class="field">
+          <label style="font-size:12px; color:var(--mute); text-transform:uppercase; font-weight:600; display:block; margin-bottom:6px;">Observaciones adicionales</label>
+          <textarea id="editModalObservaciones" style="min-height:70px; width:100%; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:14px;"></textarea>
+        </div>
+        <input type="password" id="editModalPinInput" placeholder="PIN" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:10px 12px; font-size:15px; margin-bottom:8px;">
+        <div id="editModalError" class="err" style="display:none; margin-bottom:8px;"></div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button onclick="closeModal()" style="background:#eee; border:none; padding:9px 16px; border-radius:7px; font-weight:600; cursor:pointer;">Cancelar</button>
+          <button onclick="confirmEditRecord('${id}')" style="background:var(--accent); color:#fff; border:none; padding:9px 16px; border-radius:7px; font-weight:600; cursor:pointer;">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  `;
+  fillCheckGroup('editModalTrabajo', opcionesDropdown[k.trabajo]);
+  fillCheckGroup('editModalPersonal', opcionesDropdown[k.personal]);
+  fillCheckGroup('editModalVehiculo', opcionesDropdown[k.vehiculo]);
+  preCheckGroup('editModalTrabajo', r.obsTrabajo);
+  preCheckGroup('editModalPersonal', r.obsPersonal);
+  preCheckGroup('editModalVehiculo', r.obsVehiculo);
+  document.getElementById('editModalObservaciones').value = r.observaciones || '';
+}
+
+async function confirmEditRecord(id){
+  const entered = document.getElementById('editModalPinInput').value;
+  const errEl = document.getElementById('editModalError');
+  const storedPin = localStorage.getItem('adminPin') || DEFAULT_ADMIN_PIN;
+
+  if(!entered || entered !== storedPin){
+    errEl.textContent = 'Clave incorrecta.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const obsTrabajo = getCheckedValues('editModalTrabajo').join(', ');
+  const obsPersonal = getCheckedValues('editModalPersonal').join(', ');
+  const obsVehiculo = getCheckedValues('editModalVehiculo').join(', ');
+  const observaciones = document.getElementById('editModalObservaciones').value.trim();
+
+  if(!obsTrabajo || !obsPersonal || !obsVehiculo){
+    errEl.textContent = 'Marca al menos una opción en cada una de las tres categorías.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try{
+    const { error } = await sb.from('registros').update({
+      obs_trabajo: obsTrabajo, obs_personal: obsPersonal, obs_vehiculo: obsVehiculo, observaciones
+    }).eq('id', id);
+    if(error) throw error;
+    closeModal();
+    showToast('✓ Observaciones actualizadas');
+    loadRecords();
+  }catch(e){
+    console.error(e);
+    errEl.textContent = 'No se pudo guardar. Intenta de nuevo.';
+    errEl.style.display = 'block';
+  }
+}
+
 async function confirmDelete(id){
   const entered = document.getElementById('modalPinInput').value;
   const errEl = document.getElementById('modalError');
@@ -881,9 +1119,14 @@ const DEFAULT_OPCIONES = {
   obs_trabajo: ["Sin Orden de trabajo/ realizando otro trabajo","Sin incidencia (Guardia permanente)","Realizando labores ajenas a lo de la empresa","Sin Supervisión","Sin Orden de Trabajo/Sin incidencia","No cuentan con las herramientas","OTROS","Sin observaciones"],
   obs_personal: ["Sin credencial","Sin EPP","En compañía de persona que no pertenece a CNEL","No aplica 5 reglas de oro","Sin uniforme","OTROS","Sin observaciones"],
   obs_vehiculo: ["Sin placa","Placa tapada","Sin logo Institucional","Fuera del parqueo autorizado","Sin conos","No registra en GPS","Observación de su estado/registrado en observación","Defectos de funcionamiento","OTROS","Sin observaciones"],
+  obs_trabajo_contratista: ["Sin Orden de trabajo/ realizando otro trabajo","Sin incidencia (Guardia permanente)","Realizando labores ajenas a lo de la empresa","Sin Supervisión","Sin Orden de Trabajo/Sin incidencia","No cuentan con las herramientas","OTROS","Sin observaciones"],
+  obs_personal_contratista: ["Sin credencial","Sin EPP","En compañía de persona que no pertenece a CNEL","No aplica 5 reglas de oro","Sin uniforme","OTROS","Sin observaciones"],
+  obs_vehiculo_contratista: ["Sin placa","Placa tapada","Sin logo Institucional","Fuera del parqueo autorizado","Sin conos","No registra en GPS","Observación de su estado/registrado en observación","Defectos de funcionamiento","OTROS","Sin observaciones"],
   inspectores: ["JP","LC","LZ"]
 };
 let opcionesDropdown = JSON.parse(JSON.stringify(DEFAULT_OPCIONES));
+let currentTipo = 'Propia'; // tipo de unidad activo en el formulario
+let editorTipo = 'Propia'; // tipo que se está editando en Configuración
 
 let sb = null; // cliente de Supabase activo
 
@@ -930,7 +1173,8 @@ async function loadVehiculosDB(){
     if(error) throw error;
     vehiculosDB = (data || []).map(v => ({
       unidad: v.unidad || '', placa: v.placa || '',
-      placaNorm: normPlaca(v.placa), departamento: v.departamento || '', custodio: v.custodio || ''
+      placaNorm: normPlaca(v.placa), departamento: v.departamento || '', custodio: v.custodio || '',
+      tipo: v.tipo || 'Propia', empresa: v.empresa || ''
     }));
   }catch(e){ console.error(e); vehiculosDB = []; }
   updateDbBanner();
@@ -938,8 +1182,10 @@ async function loadVehiculosDB(){
 
 function updateDbBanner(){
   const banner = document.getElementById('dbBanner');
+  const nPropia = vehiculosDB.filter(v => (v.tipo||'Propia') === 'Propia').length;
+  const nContratista = vehiculosDB.filter(v => v.tipo === 'Contratista').length;
   if(vehiculosDB.length){
-    banner.textContent = `✓ Base de vehículos activa: ${vehiculosDB.length} unidades`;
+    banner.textContent = `✓ Base de vehículos activa: ${nPropia} propios, ${nContratista} contratistas`;
     banner.style.background = '#EAF4EE';
     banner.style.color = 'var(--ok)';
   } else {
@@ -959,6 +1205,9 @@ async function loadOpcionesDropdown(){
           obs_trabajo: data.obs_trabajo || DEFAULT_OPCIONES.obs_trabajo,
           obs_personal: data.obs_personal || DEFAULT_OPCIONES.obs_personal,
           obs_vehiculo: data.obs_vehiculo || DEFAULT_OPCIONES.obs_vehiculo,
+          obs_trabajo_contratista: data.obs_trabajo_contratista || DEFAULT_OPCIONES.obs_trabajo_contratista,
+          obs_personal_contratista: data.obs_personal_contratista || DEFAULT_OPCIONES.obs_personal_contratista,
+          obs_vehiculo_contratista: data.obs_vehiculo_contratista || DEFAULT_OPCIONES.obs_vehiculo_contratista,
           inspectores: data.inspectores || DEFAULT_OPCIONES.inspectores
         };
       }
@@ -967,11 +1216,39 @@ async function loadOpcionesDropdown(){
   renderDropdownOptions();
 }
 
+function keysForTipo(tipo){
+  return tipo === 'Contratista'
+    ? { trabajo: 'obs_trabajo_contratista', personal: 'obs_personal_contratista', vehiculo: 'obs_vehiculo_contratista' }
+    : { trabajo: 'obs_trabajo', personal: 'obs_personal', vehiculo: 'obs_vehiculo' };
+}
+
 function renderDropdownOptions(){
-  fillCheckGroup('obsTrabajo', opcionesDropdown.obs_trabajo);
-  fillCheckGroup('obsPersonal', opcionesDropdown.obs_personal);
-  fillCheckGroup('obsVehiculo', opcionesDropdown.obs_vehiculo);
+  const k = keysForTipo(currentTipo);
+  fillCheckGroup('obsTrabajo', opcionesDropdown[k.trabajo]);
+  fillCheckGroup('obsPersonal', opcionesDropdown[k.personal]);
+  fillCheckGroup('obsVehiculo', opcionesDropdown[k.vehiculo]);
   fillSelect('inspector', opcionesDropdown.inspectores);
+}
+
+function selectTipoUnidad(tipo){
+  currentTipo = tipo;
+  document.getElementById('tipoUnidad').value = tipo;
+  document.getElementById('btnTipoPropia').classList.toggle('active', tipo === 'Propia');
+  document.getElementById('btnTipoContratista').classList.toggle('active', tipo === 'Contratista');
+  document.body.classList.toggle('tipo-contratista', tipo === 'Contratista');
+  document.getElementById('empresaField').style.display = tipo === 'Contratista' ? 'block' : 'none';
+
+  const esContratista = tipo === 'Contratista';
+  document.getElementById('labelDepartamento').innerHTML = esContratista
+    ? 'Contratado para: <span class="req">*</span>'
+    : 'Departamento <span class="req">*</span>';
+  document.getElementById('labelDireccion').textContent = esContratista ? 'Ubicación' : 'Dirección';
+  document.getElementById('servidoresField').style.display = esContratista ? 'none' : 'block';
+  document.getElementById('direccionServidoresGrid').style.gridTemplateColumns = esContratista ? '1fr' : '1fr 1fr';
+  if(esContratista) document.getElementById('servidores').value = '';
+
+  // Al cambiar de tipo, las listas de observaciones son distintas: se limpia la selección previa
+  renderDropdownOptions();
 }
 
 function fillSelect(selectId, options){
@@ -1006,26 +1283,50 @@ function clearCheckGroup(groupId){
 }
 
 function loadOpcionesEditors(){
-  document.getElementById('editObsTrabajo').value = opcionesDropdown.obs_trabajo.join('\n');
-  document.getElementById('editObsPersonal').value = opcionesDropdown.obs_personal.join('\n');
-  document.getElementById('editObsVehiculo').value = opcionesDropdown.obs_vehiculo.join('\n');
+  const k = keysForTipo(editorTipo);
+  document.getElementById('editObsTrabajo').value = opcionesDropdown[k.trabajo].join('\n');
+  document.getElementById('editObsPersonal').value = opcionesDropdown[k.personal].join('\n');
+  document.getElementById('editObsVehiculo').value = opcionesDropdown[k.vehiculo].join('\n');
   document.getElementById('editInspectores').value = opcionesDropdown.inspectores.join('\n');
+}
+
+function captureEditorIntoMemory(){
+  const parseLines = (id) => document.getElementById(id).value
+    .split('\n').map(l => l.trim()).filter(Boolean);
+  const k = keysForTipo(editorTipo);
+  opcionesDropdown[k.trabajo] = parseLines('editObsTrabajo');
+  opcionesDropdown[k.personal] = parseLines('editObsPersonal');
+  opcionesDropdown[k.vehiculo] = parseLines('editObsVehiculo');
+}
+
+function switchEditorTipo(tipo){
+  captureEditorIntoMemory();
+  editorTipo = tipo;
+  document.getElementById('btnEditorPropia').classList.toggle('active', tipo === 'Propia');
+  document.getElementById('btnEditorContratista').classList.toggle('active', tipo === 'Contratista');
+  document.body.classList.toggle('tipo-contratista', tipo === 'Contratista');
+  loadOpcionesEditors();
 }
 
 async function saveOpcionesDropdown(){
   const statusEl = document.getElementById('opcionesStatus');
-  const parseLines = (id) => document.getElementById(id).value
+  captureEditorIntoMemory();
+  const inspectores = document.getElementById('editInspectores').value
     .split('\n').map(l => l.trim()).filter(Boolean);
 
   const nuevas = {
-    obs_trabajo: parseLines('editObsTrabajo'),
-    obs_personal: parseLines('editObsPersonal'),
-    obs_vehiculo: parseLines('editObsVehiculo'),
-    inspectores: parseLines('editInspectores')
+    obs_trabajo: opcionesDropdown.obs_trabajo,
+    obs_personal: opcionesDropdown.obs_personal,
+    obs_vehiculo: opcionesDropdown.obs_vehiculo,
+    obs_trabajo_contratista: opcionesDropdown.obs_trabajo_contratista,
+    obs_personal_contratista: opcionesDropdown.obs_personal_contratista,
+    obs_vehiculo_contratista: opcionesDropdown.obs_vehiculo_contratista,
+    inspectores
   };
 
-  if(!nuevas.obs_trabajo.length || !nuevas.obs_personal.length || !nuevas.obs_vehiculo.length || !nuevas.inspectores.length){
-    statusEl.textContent = 'Cada lista necesita al menos una opción.';
+  const listasVacias = Object.keys(nuevas).some(k => !nuevas[k].length);
+  if(listasVacias){
+    statusEl.textContent = 'Cada lista necesita al menos una opción (revisa ambas pestañas: Propia y Contratista).';
     statusEl.style.color = 'var(--danger)';
     return;
   }
@@ -1057,10 +1358,8 @@ function findCol(headers, keywords){
   return -1;
 }
 
-document.getElementById('dbFile').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  const statusEl = document.getElementById('dbStatus');
+async function handleVehiculosUpload(file, tipoFijo){
+  const statusEl = document.getElementById(tipoFijo === 'Contratista' ? 'dbStatusContratista' : 'dbStatusPropia');
   statusEl.textContent = 'Procesando archivo...';
   statusEl.style.color = 'var(--mute)';
   try{
@@ -1081,6 +1380,7 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
     const iPlaca = findCol(headers, ['PLACA']);
     const iDepto = findCol(headers, ['DEPART']);
     const iCustodio = findCol(headers, ['CUSTODIO','CONDUCTOR']);
+    const iEmpresa = findCol(headers, ['EMPRESA']);
 
     const parsed = [];
     for(let r=headerRowIdx+1; r<rows.length; r++){
@@ -1092,7 +1392,9 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
         placa: String(placa).trim(),
         placaNorm: normPlaca(placa),
         departamento: iDepto>-1 ? String(row[iDepto]||'').trim() : '',
-        custodio: iCustodio>-1 ? String(row[iCustodio]||'').trim() : ''
+        custodio: iCustodio>-1 ? String(row[iCustodio]||'').trim() : '',
+        empresa: (tipoFijo === 'Contratista' && iEmpresa>-1) ? String(row[iEmpresa]||'').trim() : '',
+        tipo: tipoFijo
       });
     }
     if(parsed.length === 0) throw new Error('No se pudo extraer ningún vehículo del archivo.');
@@ -1100,32 +1402,49 @@ document.getElementById('dbFile').addEventListener('change', async (e)=>{
 
     statusEl.textContent = 'Subiendo a la base central (puede tardar unos segundos)...';
 
-    // Borra la base de vehículos anterior y sube la nueva completa
-    const { error: delErr } = await sb.from('vehiculos').delete().neq('placa', '__nunca__');
+    // Borra SOLO la base de este tipo (propia o contratista) y sube la nueva completa,
+    // sin tocar los vehículos del otro tipo
+    const { error: delErr } = await sb.from('vehiculos').delete().eq('tipo', tipoFijo);
     if(delErr) throw delErr;
 
     const rowsToInsert = parsed.map(v => ({
-      placa: v.placa, unidad: v.unidad, departamento: v.departamento, custodio: v.custodio
+      placa: v.placa, unidad: v.unidad, departamento: v.departamento, custodio: v.custodio,
+      tipo: v.tipo, empresa: v.empresa
     }));
     const { error: insErr } = await sb.from('vehiculos').insert(rowsToInsert);
     if(insErr) throw insErr;
 
-    vehiculosDB = parsed;
+    // Refrescar en memoria: reemplaza solo los de este tipo, conserva los del otro
+    vehiculosDB = vehiculosDB.filter(v => v.tipo !== tipoFijo).concat(parsed);
     updateDbBanner();
-    statusEl.textContent = `✓ Base actualizada: ${parsed.length} vehículos, disponible ya para los 3 dispositivos.`;
+    statusEl.textContent = `✓ Base actualizada: ${parsed.length} vehículos ${tipoFijo === 'Contratista' ? 'contratistas' : 'propios'}, disponible ya para los 3 dispositivos.`;
     statusEl.style.color = 'var(--ok)';
-    renderDbPreview(parsed);
+    renderDbPreview(parsed, tipoFijo);
   }catch(err){
     console.error(err);
     statusEl.textContent = '✕ ' + err.message;
     statusEl.style.color = 'var(--danger)';
   }
+}
+
+document.getElementById('dbFilePropia').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  await handleVehiculosUpload(file, 'Propia');
   e.target.value = '';
 });
 
-function renderDbPreview(list){
-  const box = document.getElementById('dbPreview');
+document.getElementById('dbFileContratista').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  await handleVehiculosUpload(file, 'Contratista');
+  e.target.value = '';
+});
+
+function renderDbPreview(list, tipoFijo){
+  const box = document.getElementById(tipoFijo === 'Contratista' ? 'dbPreviewContratista' : 'dbPreviewPropia');
   const sample = list.slice(0,5);
+  const mostrarEmpresa = tipoFijo === 'Contratista';
   box.innerHTML = `
     <div class="section-label" style="margin-top:6px;">Vista previa (primeros ${sample.length})</div>
     <div style="overflow-x:auto;">
@@ -1134,7 +1453,8 @@ function renderDbPreview(list){
         <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Unidad</th>
         <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Placa</th>
         <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Departamento</th>
-        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Custodio/Conductor</th>
+        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Conductor</th>
+        ${mostrarEmpresa ? '<th style="text-align:left; padding:6px 8px; border-bottom:1px solid var(--line);">Empresa</th>' : ''}
       </tr>
       ${sample.map(v=>`
         <tr>
@@ -1142,6 +1462,7 @@ function renderDbPreview(list){
           <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.placa}</td>
           <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.departamento}</td>
           <td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.custodio}</td>
+          ${mostrarEmpresa ? `<td style="padding:6px 8px; border-bottom:1px solid var(--line);">${v.empresa||''}</td>` : ''}
         </tr>`).join('')}
     </table>
     </div>
@@ -1150,14 +1471,27 @@ function renderDbPreview(list){
 
 async function refreshDbStatus(){
   await loadVehiculosDB();
-  const statusEl = document.getElementById('dbStatus');
-  if(vehiculosDB.length){
-    statusEl.textContent = `Base actual: ${vehiculosDB.length} vehículos cargados.`;
-    statusEl.style.color = 'var(--mute)';
-    renderDbPreview(vehiculosDB);
+  const propios = vehiculosDB.filter(v => (v.tipo||'Propia') === 'Propia');
+  const contratistas = vehiculosDB.filter(v => v.tipo === 'Contratista');
+
+  const statusPropia = document.getElementById('dbStatusPropia');
+  if(propios.length){
+    statusPropia.textContent = `Base actual: ${propios.length} vehículos propios cargados.`;
+    statusPropia.style.color = 'var(--mute)';
+    renderDbPreview(propios, 'Propia');
   } else {
-    statusEl.textContent = 'Todavía no hay ninguna base de vehículos cargada.';
-    statusEl.style.color = 'var(--mute)';
+    statusPropia.textContent = 'Todavía no hay ninguna base de vehículos propios cargada.';
+    statusPropia.style.color = 'var(--mute)';
+  }
+
+  const statusContratista = document.getElementById('dbStatusContratista');
+  if(contratistas.length){
+    statusContratista.textContent = `Base actual: ${contratistas.length} vehículos contratistas cargados.`;
+    statusContratista.style.color = 'var(--mute)';
+    renderDbPreview(contratistas, 'Contratista');
+  } else {
+    statusContratista.textContent = 'Todavía no hay ninguna base de vehículos contratistas cargada.';
+    statusContratista.style.color = 'var(--mute)';
   }
 }
 
@@ -1241,10 +1575,12 @@ async function submitRecord(){
   clearError();
   const placa = document.getElementById('placa').value.trim();
   const unidad = document.getElementById('unidad').value.trim();
+  const tipoUnidad = document.getElementById('tipoUnidad').value;
   const inspector = document.getElementById('inspector').value;
   const fechaInspeccion = document.getElementById('fecha').value;
   const hora = document.getElementById('hora').value;
   const custodio = document.getElementById('custodio').value.trim();
+  const empresaContratista = document.getElementById('empresaContratista').value.trim();
   const departamento = document.getElementById('departamento').value.trim();
   const direccion = document.getElementById('direccion').value.trim();
   const servidores = document.getElementById('servidores').value.trim();
@@ -1253,8 +1589,8 @@ async function submitRecord(){
   const obsVehiculoArr = getCheckedValues('obsVehiculo');
   const observaciones = document.getElementById('observaciones').value.trim();
 
-  if(!placa || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajoArr.length || !obsPersonalArr.length || !obsVehiculoArr.length){
-    showError('Completa inspector, fecha, hora, placa, custodio, departamento y marca al menos una opción en cada una de las tres listas de observaciones.');
+  if(!placa || !tipoUnidad || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajoArr.length || !obsPersonalArr.length || !obsVehiculoArr.length){
+    showError('Completa tipo de unidad, inspector, fecha, hora, placa, custodio, departamento y marca al menos una opción en cada una de las tres listas de observaciones.');
     return;
   }
   if(photos.length === 0){
@@ -1289,7 +1625,7 @@ async function submitRecord(){
     }
 
     const { error: insErr } = await sb.from('registros').insert({
-      id, placa, unidad, inspector,
+      id, placa, unidad, tipo_unidad: tipoUnidad, empresa_contratista: empresaContratista, inspector,
       fecha_inspeccion: fechaInspeccion, hora, custodio, departamento, direccion, servidores,
       obs_trabajo: obsTrabajo, obs_personal: obsPersonal, obs_vehiculo: obsVehiculo,
       observaciones, fotos: photoUrls
@@ -1302,6 +1638,7 @@ async function submitRecord(){
     document.getElementById('unidad').value = '';
     document.getElementById('inspector').value = '';
     document.getElementById('custodio').value = '';
+    document.getElementById('empresaContratista').value = '';
     document.getElementById('departamento').value = '';
     document.getElementById('direccion').value = '';
     document.getElementById('servidores').value = '';
@@ -1340,6 +1677,8 @@ async function loadRecords(){
       inspector: row.inspector,
       placa: row.placa,
       unidad: row.unidad,
+      tipoUnidad: row.tipo_unidad || 'Propia',
+      empresaContratista: row.empresa_contratista || '',
       departamento: row.departamento,
       custodio: row.custodio,
       direccion: row.direccion,
@@ -1364,15 +1703,23 @@ function updateCountBadge(){
   document.getElementById('countBadge').textContent = allRecords.length;
 }
 
+let currentFiltered = [];
+
 function renderList(){
   const q = (document.getElementById('search').value || '').toLowerCase();
+  const desde = document.getElementById('filterDesde').value;
+  const hasta = document.getElementById('filterHasta').value;
   const container = document.getElementById('listContainer');
-  const filtered = allRecords.filter(r=>
+  let filtered = allRecords.filter(r=>
     r.placa.toLowerCase().includes(q) ||
     r.custodio.toLowerCase().includes(q) ||
     r.departamento.toLowerCase().includes(q) ||
     (r.inspector||'').toLowerCase().includes(q)
   );
+  if(desde) filtered = filtered.filter(r => r.fechaInspeccion && r.fechaInspeccion >= desde);
+  if(hasta) filtered = filtered.filter(r => r.fechaInspeccion && r.fechaInspeccion <= hasta);
+  currentFiltered = filtered;
+
   if(filtered.length === 0){
     container.innerHTML = '<div class="empty">No hay registros que coincidan.</div>';
     return;
@@ -1382,9 +1729,14 @@ function renderList(){
     return `
       <div class="rec">
         <div class="rec-top">
-          <span class="rec-plate">${r.placa}</span>
+          <div style="display:flex; align-items:center;">
+            <span class="rec-plate">${r.placa}</span>
+            <span style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; margin-left:6px; background:${r.tipoUnidad==='Contratista'?'#FDEFD9':'#E3F0FB'}; color:${r.tipoUnidad==='Contratista'?'#8A5A12':'#0C5A8A'};">${r.tipoUnidad || 'Propia'}</span>
+          </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="rec-date">${fechaMostrar} ${r.hora ? '· '+r.hora : ''}</span>
+            <button onclick="openEditModal('${r.id}')" title="Editar observaciones"
+              style="background:none; border:1px solid var(--line); color:var(--accent); border-radius:5px; width:26px; height:26px; cursor:pointer; font-size:13px;">✏️</button>
             <button onclick="deleteRecord('${r.id}')" title="Eliminar registro"
               style="background:none; border:1px solid var(--line); color:var(--danger); border-radius:5px; width:26px; height:26px; cursor:pointer; font-size:13px;">🗑</button>
           </div>
@@ -1392,7 +1744,8 @@ function renderList(){
         <div class="rec-tag">Trabajo: ${r.obsTrabajo || '—'}</div>
         <div class="rec-tag">Personal: ${r.obsPersonal || '—'}</div>
         <div class="rec-tag">Vehículo: ${r.obsVehiculo || '—'}</div>
-        <div class="rec-meta"><b>Unidad:</b> ${r.unidad || '—'} &nbsp;·&nbsp; <b>Inspector:</b> ${r.inspector || '—'} &nbsp;·&nbsp; <b>Custodio:</b> ${r.custodio} &nbsp;·&nbsp; <b>Depto:</b> ${r.departamento}</div>
+        <div class="rec-meta"><b>Unidad:</b> ${r.unidad || '—'} &nbsp;·&nbsp; <b>Inspector:</b> ${r.inspector || '—'} &nbsp;·&nbsp; <b>Conductor:</b> ${r.custodio} &nbsp;·&nbsp; <b>Depto:</b> ${r.departamento}</div>
+        ${r.empresaContratista ? `<div class="rec-meta"><b>Empresa contratista:</b> ${r.empresaContratista}</div>` : ''}
         ${r.direccion ? `<div class="rec-meta"><b>Dirección:</b> ${r.direccion}</div>` : ''}
         ${r.servidores ? `<div class="rec-meta"><b>Servidores presentes:</b> ${r.servidores}</div>` : ''}
         ${r.observaciones ? `<div class="rec-obs">${r.observaciones}</div>` : ''}
@@ -1412,6 +1765,8 @@ function openLightbox(src){
 loadRecords();
 loadVehiculosDB();
 loadOpcionesDropdown();
+document.getElementById('btnTipoPropia').classList.add('active');
+document.getElementById('tipoUnidad').value = 'Propia';
 </script>
 </body>
 </html>
