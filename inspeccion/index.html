@@ -1589,8 +1589,20 @@ async function submitRecord(){
   const obsVehiculoArr = getCheckedValues('obsVehiculo');
   const observaciones = document.getElementById('observaciones').value.trim();
 
-  if(!placa || !tipoUnidad || !custodio || !departamento || !inspector || !hora || !fechaInspeccion || !obsTrabajoArr.length || !obsPersonalArr.length || !obsVehiculoArr.length){
-    showError('Completa tipo de unidad, inspector, fecha, hora, placa, custodio, departamento y marca al menos una opción en cada una de las tres listas de observaciones.');
+  const faltantes = [];
+  if(!placa) faltantes.push('Placa');
+  if(!tipoUnidad) faltantes.push('Tipo de unidad');
+  if(!custodio) faltantes.push('Conductor');
+  if(!departamento) faltantes.push(tipoUnidad === 'Contratista' ? 'Contratado para' : 'Departamento');
+  if(!inspector) faltantes.push('Inspector de Control Interno');
+  if(!hora) faltantes.push('Hora');
+  if(!fechaInspeccion) faltantes.push('Fecha');
+  if(!obsTrabajoArr.length) faltantes.push('Observación en el trabajo (marcar al menos una)');
+  if(!obsPersonalArr.length) faltantes.push('Observaciones del Personal (marcar al menos una)');
+  if(!obsVehiculoArr.length) faltantes.push('Observaciones en el vehículo (marcar al menos una)');
+
+  if(faltantes.length){
+    showError('Falta completar: ' + faltantes.join(', ') + '.');
     return;
   }
   if(photos.length === 0){
