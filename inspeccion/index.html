@@ -586,7 +586,7 @@
           <input type="date" id="filterHasta" oninput="renderList()" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:8px 10px; font-size:13.5px;">
         </div>
         <button class="btn-photo" onclick="document.getElementById('filterDesde').value=''; document.getElementById('filterHasta').value=''; renderList();" style="white-space:nowrap;">Quitar fechas</button>
-        <button class="btn-photo" id="sortBtn" onclick="toggleSortOrder()" style="white-space:nowrap;">⬆️ Más antigua primero</button>
+        <button class="btn-photo" id="sortBtn" onclick="toggleSortOrder()" style="white-space:nowrap;">⬇️ Más reciente primero</button>
       </div>
 
       <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
@@ -1180,6 +1180,17 @@ function openEditModal(id){
         <label style="${miniLabel}">Placa</label>
         <input type="text" id="editModalPlaca" style="${inputStyle}" value="${(r.placa||'').replace(/"/g,'&quot;')}">
 
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div>
+            <label style="${miniLabel}">Fecha</label>
+            <input type="date" id="editModalFecha" style="${inputStyle}" value="${r.fechaInspeccion || ''}">
+          </div>
+          <div>
+            <label style="${miniLabel}">Hora</label>
+            <input type="time" id="editModalHora" style="${inputStyle}" value="${r.hora || ''}">
+          </div>
+        </div>
+
         <label style="${miniLabel}">Unidad</label>
         <input type="text" id="editModalUnidad" style="${inputStyle}" value="${(r.unidad||'').replace(/"/g,'&quot;')}">
 
@@ -1247,6 +1258,8 @@ async function confirmEditRecord(id){
   const obsVehiculo = getCheckedValues('editModalVehiculo').join(', ');
   const observaciones = document.getElementById('editModalObservaciones').value.trim();
   const placa = document.getElementById('editModalPlaca').value.trim().toUpperCase();
+  const fechaInspeccion = document.getElementById('editModalFecha').value;
+  const hora = document.getElementById('editModalHora').value;
   const unidad = document.getElementById('editModalUnidad').value.trim();
   const custodio = document.getElementById('editModalCustodio').value.trim();
   const departamento = document.getElementById('editModalDepartamento').value.trim();
@@ -1259,14 +1272,15 @@ async function confirmEditRecord(id){
     errEl.style.display = 'block';
     return;
   }
-  if(!placa || !custodio || !departamento){
-    errEl.textContent = 'Placa, Conductor y Departamento no pueden quedar vacíos.';
+  if(!placa || !custodio || !departamento || !fechaInspeccion || !hora){
+    errEl.textContent = 'Placa, Fecha, Hora, Conductor y Departamento no pueden quedar vacíos.';
     errEl.style.display = 'block';
     return;
   }
 
   const updatePayload = {
     obs_trabajo: obsTrabajo, obs_personal: obsPersonal, obs_vehiculo: obsVehiculo, observaciones,
+    fecha_inspeccion: fechaInspeccion, hora,
     placa, unidad, custodio, departamento, direccion
   };
   if(empresaContratista !== undefined) updatePayload.empresa_contratista = empresaContratista;
@@ -1921,7 +1935,7 @@ function updateCountBadge(){
 }
 
 let currentFiltered = [];
-let sortAsc = true; // por defecto: más antigua primero
+let sortAsc = false; // por defecto: más reciente primero
 
 function toggleSortOrder(){
   sortAsc = !sortAsc;
