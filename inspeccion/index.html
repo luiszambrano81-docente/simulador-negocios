@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --navy:#16273D;
@@ -585,11 +586,13 @@
           <input type="date" id="filterHasta" oninput="renderList()" style="width:100%; border:1px solid var(--line); border-radius:7px; padding:8px 10px; font-size:13.5px;">
         </div>
         <button class="btn-photo" onclick="document.getElementById('filterDesde').value=''; document.getElementById('filterHasta').value=''; renderList();" style="white-space:nowrap;">Quitar fechas</button>
+        <button class="btn-photo" id="sortBtn" onclick="toggleSortOrder()" style="white-space:nowrap;">⬆️ Más antigua primero</button>
       </div>
 
       <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
         <button class="btn-photo" onclick="exportToExcel()" style="white-space:nowrap;">📥 Exportar Excel</button>
         <button class="btn-photo" id="zipBtn" onclick="downloadPhotosZip()" style="white-space:nowrap;">🖼️ Descargar fotos (ZIP)</button>
+        <button class="btn-photo" id="pdfBtn" onclick="downloadRecordsPDF()" style="white-space:nowrap;">📄 Descargar fichas (PDF)</button>
       </div>
       <div id="zipStatus" style="font-size:13px; color:var(--mute); margin-bottom:10px;"></div>
 
@@ -824,6 +827,168 @@ function exportToExcel(){
   XLSX.writeFile(wb, `Registro_Revision_In_Situ_${hoy}.xlsx`);
 }
 
+function blobToDataURL(blob){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function loadImageDims(dataUrl){
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 1, h: 1 });
+    img.src = dataUrl;
+  });
+}
+
+async function buildRecordPDF(doc, r){
+  const pageW = 210, marginX = 15;
+  const contentW = pageW - marginX*2;
+  let y = 15;
+  const esContratista = (r.tipoUnidad === 'Contratista');
+
+  // Encabezado con la placa
+  doc.setFillColor(2,132,199);
+  if(esContratista) doc.setFillColor(155,58,52);
+  doc.rect(marginX, y, contentW, 16, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.text(`PLACA #  ${r.placa || '—'}`, marginX+5, y+10.5);
+  doc.setFontSize(10);
+  doc.text(r.tipoUnidad || 'Propia', pageW-marginX-5, y+10.5, {align:'right'});
+  y += 22;
+
+  doc.setTextColor(20,20,20);
+  const campo = (label, valor) => {
+    doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text(label.toUpperCase()+':', marginX, y);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5);
+    const texto = doc.splitTextToSize(valor || '—', contentW - 42);
+    doc.text(texto, marginX+42, y);
+    y += Math.max(6, texto.length*5.2);
+  };
+
+  campo('Unidad', r.unidad);
+  campo('Conductor', r.custodio);
+  campo(esContratista ? 'Contratado para' : 'Departamento', r.departamento);
+  campo(esContratista ? 'Ubicación' : 'Dirección', r.direccion);
+  if(esContratista) campo('Empresa contratista', r.empresaContratista);
+  if(!esContratista && r.servidores) campo('Servidores presentes', r.servidores);
+  campo('Inspector', r.inspector);
+  campo('Fecha / Hora', `${r.fechaInspeccion || '—'}  ${r.hora || ''}`);
+
+  y += 2;
+  doc.setDrawColor(216,220,225);
+  doc.line(marginX, y, pageW-marginX, y);
+  y += 7;
+
+  const bloque = (titulo, texto) => {
+    doc.setFillColor(esContratista ? 155 : 2, esContratista ? 58 : 132, esContratista ? 52 : 199);
+    doc.rect(marginX, y-4.5, contentW, 6.5, 'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+    doc.text(titulo.toUpperCase(), marginX+3, y);
+    y += 6;
+    doc.setTextColor(20,20,20); doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const lineas = doc.splitTextToSize(texto || 'Sin observaciones', contentW-4);
+    doc.text(lineas, marginX+2, y);
+    y += lineas.length*5 + 4;
+  };
+
+  bloque('Observación en el trabajo', r.obsTrabajo);
+  bloque('Observaciones del Personal', r.obsPersonal);
+  bloque('Observaciones en el vehículo', r.obsVehiculo);
+  if(r.observaciones){
+    bloque('Observaciones adicionales', r.observaciones);
+  }
+
+  // Fotos
+  const photos = r.photos || [];
+  if(photos.length){
+    y += 2;
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(20,20,20);
+    doc.text(`FOTOGRAFÍAS (${photos.length})`, marginX, y);
+    y += 5;
+
+    const cols = 3;
+    const gap = 4;
+    const boxW = (contentW - gap*(cols-1)) / cols;
+    const boxH = 42;
+    let col = 0;
+
+    for(const url of photos){
+      if(y + boxH > 280){ doc.addPage(); y = 15; col = 0; }
+      const x = marginX + col*(boxW+gap);
+      try{
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const dataUrl = await blobToDataURL(blob);
+        const dims = await loadImageDims(dataUrl);
+        let w = boxW, h = boxW * (dims.h/dims.w);
+        if(h > boxH){ h = boxH; w = boxH * (dims.w/dims.h); }
+        const offX = x + (boxW-w)/2, offY = y + (boxH-h)/2;
+        doc.setDrawColor(216,220,225);
+        doc.rect(x, y, boxW, boxH);
+        doc.addImage(dataUrl, 'JPEG', offX, offY, w, h);
+      }catch(e){
+        doc.setDrawColor(216,220,225);
+        doc.rect(x, y, boxW, boxH);
+        doc.setFontSize(8); doc.text('No se pudo cargar', x+3, y+boxH/2);
+      }
+      col++;
+      if(col >= cols){ col = 0; y += boxH + gap; }
+    }
+  }
+}
+
+async function downloadRecordsPDF(){
+  const data = currentFiltered.length ? currentFiltered : allRecords;
+  if(!data.length){
+    showToast('No hay registros para generar en el período seleccionado.');
+    return;
+  }
+  const btn = document.getElementById('pdfBtn');
+  const statusEl = document.getElementById('zipStatus');
+  btn.disabled = true;
+  let hechos = 0;
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const zip = new JSZip();
+    for(const r of data){
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      await buildRecordPDF(doc, r);
+      const blob = doc.output('blob');
+      const nombre = `${r.fechaInspeccion || 'sin-fecha'}_${r.placa || 'sin-placa'}.pdf`;
+      zip.file(nombre, blob);
+      hechos++;
+      statusEl.textContent = `Generando fichas PDF... (${hechos} de ${data.length})`;
+    }
+    statusEl.textContent = 'Comprimiendo archivo ZIP...';
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    const desde = document.getElementById('filterDesde').value;
+    const hasta = document.getElementById('filterHasta').value;
+    const rango = (desde || hasta) ? `_${desde||'inicio'}_a_${hasta||'hoy'}` : '_completo';
+    a.href = url;
+    a.download = `Fichas_Revision_In_Situ${rango}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    statusEl.textContent = `✓ Listo — ${data.length} fichas PDF generadas.`;
+  }catch(e){
+    console.error(e);
+    statusEl.textContent = 'No se pudo generar el archivo PDF.';
+  }
+  btn.disabled = false;
+}
+
 async function downloadPhotosZip(){
   const data = currentFiltered.length ? currentFiltered : allRecords;
   const withPhotos = data.filter(r => (r.photos||[]).length > 0);
@@ -1002,12 +1167,36 @@ function openEditModal(id){
   const r = allRecords.find(x => x.id === id);
   if(!r) return;
   const tipo = r.tipoUnidad || 'Propia';
+  const esContratista = tipo === 'Contratista';
   const k = keysForTipo(tipo);
   const host = document.getElementById('modalHost');
+  const inputStyle = 'width:100%; border:1px solid var(--line); border-radius:7px; padding:9px 11px; font-size:14px; margin-bottom:10px;';
+  const miniLabel = 'display:block; font-size:11px; color:var(--mute); text-transform:uppercase; font-weight:600; margin-bottom:4px;';
   host.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-box" style="max-width:420px; max-height:88vh; overflow-y:auto;">
-        <div class="section-label" style="margin-top:0;">Editar observaciones — ${r.placa} (${tipo})</div>
+      <div class="modal-box" style="max-width:440px; max-height:88vh; overflow-y:auto;">
+        <div class="section-label" style="margin-top:0;">Editar registro — ${r.placa} (${tipo})</div>
+
+        <label style="${miniLabel}">Placa</label>
+        <input type="text" id="editModalPlaca" style="${inputStyle}" value="${(r.placa||'').replace(/"/g,'&quot;')}">
+
+        <label style="${miniLabel}">Unidad</label>
+        <input type="text" id="editModalUnidad" style="${inputStyle}" value="${(r.unidad||'').replace(/"/g,'&quot;')}">
+
+        <label style="${miniLabel}">Conductor</label>
+        <input type="text" id="editModalCustodio" style="${inputStyle}" value="${(r.custodio||'').replace(/"/g,'&quot;')}">
+
+        <label style="${miniLabel}">${esContratista ? 'Contratado para' : 'Departamento'}</label>
+        <input type="text" id="editModalDepartamento" style="${inputStyle}" value="${(r.departamento||'').replace(/"/g,'&quot;')}">
+
+        <label style="${miniLabel}">${esContratista ? 'Ubicación' : 'Dirección'}</label>
+        <input type="text" id="editModalDireccion" style="${inputStyle}" value="${(r.direccion||'').replace(/"/g,'&quot;')}">
+
+        ${esContratista ? `
+        <label style="${miniLabel}">Empresa contratista</label>
+        <input type="text" id="editModalEmpresa" style="${inputStyle}" value="${(r.empresaContratista||'').replace(/"/g,'&quot;')}">
+        ` : ''}
+
         <div class="field">
           <label style="font-size:12px; color:var(--mute); text-transform:uppercase; font-weight:600; display:block; margin-bottom:6px;">Observación en el trabajo</label>
           <div class="check-group check-grid" id="editModalTrabajo"></div>
@@ -1057,20 +1246,36 @@ async function confirmEditRecord(id){
   const obsPersonal = getCheckedValues('editModalPersonal').join(', ');
   const obsVehiculo = getCheckedValues('editModalVehiculo').join(', ');
   const observaciones = document.getElementById('editModalObservaciones').value.trim();
+  const placa = document.getElementById('editModalPlaca').value.trim().toUpperCase();
+  const unidad = document.getElementById('editModalUnidad').value.trim();
+  const custodio = document.getElementById('editModalCustodio').value.trim();
+  const departamento = document.getElementById('editModalDepartamento').value.trim();
+  const direccion = document.getElementById('editModalDireccion').value.trim();
+  const empresaEl = document.getElementById('editModalEmpresa');
+  const empresaContratista = empresaEl ? empresaEl.value.trim() : undefined;
 
   if(!obsTrabajo || !obsPersonal || !obsVehiculo){
     errEl.textContent = 'Marca al menos una opción en cada una de las tres categorías.';
     errEl.style.display = 'block';
     return;
   }
+  if(!placa || !custodio || !departamento){
+    errEl.textContent = 'Placa, Conductor y Departamento no pueden quedar vacíos.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const updatePayload = {
+    obs_trabajo: obsTrabajo, obs_personal: obsPersonal, obs_vehiculo: obsVehiculo, observaciones,
+    placa, unidad, custodio, departamento, direccion
+  };
+  if(empresaContratista !== undefined) updatePayload.empresa_contratista = empresaContratista;
 
   try{
-    const { error } = await sb.from('registros').update({
-      obs_trabajo: obsTrabajo, obs_personal: obsPersonal, obs_vehiculo: obsVehiculo, observaciones
-    }).eq('id', id);
+    const { error } = await sb.from('registros').update(updatePayload).eq('id', id);
     if(error) throw error;
     closeModal();
-    showToast('✓ Observaciones actualizadas');
+    showToast('✓ Registro actualizado');
     loadRecords();
   }catch(e){
     console.error(e);
@@ -1716,6 +1921,13 @@ function updateCountBadge(){
 }
 
 let currentFiltered = [];
+let sortAsc = true; // por defecto: más antigua primero
+
+function toggleSortOrder(){
+  sortAsc = !sortAsc;
+  document.getElementById('sortBtn').textContent = sortAsc ? '⬆️ Más antigua primero' : '⬇️ Más reciente primero';
+  renderList();
+}
 
 function renderList(){
   const q = (document.getElementById('search').value || '').toLowerCase();
@@ -1730,6 +1942,12 @@ function renderList(){
   );
   if(desde) filtered = filtered.filter(r => r.fechaInspeccion && r.fechaInspeccion >= desde);
   if(hasta) filtered = filtered.filter(r => r.fechaInspeccion && r.fechaInspeccion <= hasta);
+
+  filtered.sort((a,b)=>{
+    const ka = (a.fechaInspeccion||'') + ' ' + (a.hora||'');
+    const kb = (b.fechaInspeccion||'') + ' ' + (b.hora||'');
+    return sortAsc ? ka.localeCompare(kb) : kb.localeCompare(ka);
+  });
   currentFiltered = filtered;
 
   if(filtered.length === 0){
