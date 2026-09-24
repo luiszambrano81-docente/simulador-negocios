@@ -465,7 +465,7 @@
       <div class="plate-block">
         <div class="plate">
           <div class="plate-strip">PLACA #</div>
-          <input type="text" id="placa" placeholder="ABC-1234" maxlength="10">
+          <input type="text" id="placa" placeholder="ABC0123" maxlength="10">
         </div>
       </div>
       <div id="matchStatus" style="text-align:center; font-size:12.5px; margin:-8px 0 16px; display:none;"></div>
@@ -559,7 +559,7 @@
       </div>
 
       <div class="field">
-        <label class="label-badge">Inspector de Control Interno <span class="req">*</span></label>
+        <label class="label-badge">Revisor de Control Interno <span class="req">*</span></label>
         <select id="inspector">
           <option value="">Selecciona...</option>
         </select>
@@ -630,9 +630,9 @@
       </div>
 
       <div class="card" style="margin-top:16px;">
-        <div class="section-label">Inspectores</div>
+        <div class="section-label">Revisores</div>
         <p style="font-size:13.5px; color:var(--mute); margin-top:0;">
-          Un nombre/inicial por línea (ej. iniciales de cada persona). Útil si cambia algún supervisor:
+          Un nombre completo por línea. Útil si cambia algún revisor:
           solo edita esta lista, sin tocar nada más.
         </p>
         <div class="field">
@@ -804,7 +804,7 @@ function exportToExcel(){
   const rows = data.map(r => ({
     'Fecha inspección': r.fechaInspeccion || '',
     'Hora': r.hora || '',
-    'Inspector': r.inspector || '',
+    'Revisor': r.inspector || '',
     'Placa': r.placa || '',
     'Unidad': r.unidad || '',
     'Tipo de unidad': r.tipoUnidad || 'Propia',
@@ -879,7 +879,7 @@ async function buildRecordPDF(doc, r){
   campo(esContratista ? 'Ubicación' : 'Dirección', r.direccion);
   if(esContratista) campo('Empresa contratista', r.empresaContratista);
   if(!esContratista && r.servidores) campo('Servidores presentes', r.servidores);
-  campo('Inspector', r.inspector);
+  campo('Revisor', r.inspector);
   campo('Fecha / Hora', `${r.fechaInspeccion || '—'}  ${r.hora || ''}`);
 
   y += 2;
@@ -1063,6 +1063,19 @@ function normPlaca(s){
   return (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,'');
 }
 
+// Formato oficial: 3 letras + 4 números, sin guion ni espacio (ej. ABC0123).
+// Si solo trae 3 números, se antepone un cero.
+function formatPlaca(s){
+  const limpio = normPlaca(s);
+  const m = limpio.match(/^([A-Z]{3})(\d{3,4})$/);
+  if(m){
+    let digitos = m[2];
+    if(digitos.length === 3) digitos = '0' + digitos;
+    return m[1] + digitos;
+  }
+  return limpio;
+}
+
 document.getElementById('placa').addEventListener('input', (e)=>{
   e.target.value = e.target.value.toUpperCase();
   tryInstantMatch(e.target.value);
@@ -1072,7 +1085,7 @@ document.getElementById('placa').addEventListener('blur', (e)=>{
 });
 
 function tryInstantMatch(placaVal){
-  const norm = normPlaca(placaVal);
+  const norm = formatPlaca(placaVal);
   const statusEl = document.getElementById('matchStatus');
   if(!norm){ statusEl.style.display='none'; return; }
   const match = vehiculosDB.find(v => v.placaNorm === norm);
@@ -1092,7 +1105,9 @@ function tryInstantMatch(placaVal){
 }
 
 function lookupPlaca(placaVal){
-  const norm = normPlaca(placaVal);
+  const norm = formatPlaca(placaVal);
+  // Reformatear el campo visible al formato oficial (3 letras + 4 números, sin separador)
+  if(norm) document.getElementById('placa').value = norm;
   const statusEl = document.getElementById('matchStatus');
   if(!norm){ statusEl.style.display='none'; return; }
   const match = vehiculosDB.find(v => v.placaNorm === norm);
@@ -1257,7 +1272,7 @@ async function confirmEditRecord(id){
   const obsPersonal = getCheckedValues('editModalPersonal').join(', ');
   const obsVehiculo = getCheckedValues('editModalVehiculo').join(', ');
   const observaciones = document.getElementById('editModalObservaciones').value.trim();
-  const placa = document.getElementById('editModalPlaca').value.trim().toUpperCase();
+  const placa = formatPlaca(document.getElementById('editModalPlaca').value);
   const fechaInspeccion = document.getElementById('editModalFecha').value;
   const hora = document.getElementById('editModalHora').value;
   const unidad = document.getElementById('editModalUnidad').value.trim();
@@ -1341,7 +1356,7 @@ const DEFAULT_OPCIONES = {
   obs_trabajo_contratista: ["Sin Orden de trabajo/ realizando otro trabajo","Sin incidencia (Guardia permanente)","Realizando labores ajenas a lo de la empresa","Sin Supervisión","Sin Orden de Trabajo/Sin incidencia","No cuentan con las herramientas","OTROS","Sin observaciones"],
   obs_personal_contratista: ["Sin credencial","Sin EPP","En compañía de persona que no pertenece a CNEL","No aplica 5 reglas de oro","Sin uniforme","OTROS","Sin observaciones"],
   obs_vehiculo_contratista: ["Sin placa","Placa tapada","Sin logo Institucional","Fuera del parqueo autorizado","Sin conos","No registra en GPS","Observación de su estado/registrado en observación","Defectos de funcionamiento","OTROS","Sin observaciones"],
-  inspectores: ["JP","LC","LZ"]
+  inspectores: ["Julio Pezo","Lorena Cassagne","Luis Zambrano"]
 };
 let opcionesDropdown = JSON.parse(JSON.stringify(DEFAULT_OPCIONES));
 let currentTipo = 'Propia'; // tipo de unidad activo en el formulario
@@ -1392,7 +1407,7 @@ async function loadVehiculosDB(){
     if(error) throw error;
     vehiculosDB = (data || []).map(v => ({
       unidad: v.unidad || '', placa: v.placa || '',
-      placaNorm: normPlaca(v.placa), departamento: v.departamento || '', custodio: v.custodio || '',
+      placaNorm: formatPlaca(v.placa), departamento: v.departamento || '', custodio: v.custodio || '',
       tipo: v.tipo || 'Propia', empresa: v.empresa || ''
     }));
   }catch(e){ console.error(e); vehiculosDB = []; }
@@ -1608,8 +1623,8 @@ async function handleVehiculosUpload(file, tipoFijo){
       if(!placa) continue;
       parsed.push({
         unidad: iUnidad>-1 ? String(row[iUnidad]||'').trim() : '',
-        placa: String(placa).trim(),
-        placaNorm: normPlaca(placa),
+        placa: formatPlaca(placa),
+        placaNorm: formatPlaca(placa),
         departamento: iDepto>-1 ? String(row[iDepto]||'').trim() : '',
         custodio: iCustodio>-1 ? String(row[iCustodio]||'').trim() : '',
         empresa: (tipoFijo === 'Contratista' && iEmpresa>-1) ? String(row[iEmpresa]||'').trim() : '',
@@ -1792,7 +1807,7 @@ function clearError(){
 
 async function submitRecord(){
   clearError();
-  const placa = document.getElementById('placa').value.trim();
+  const placa = formatPlaca(document.getElementById('placa').value);
   const unidad = document.getElementById('unidad').value.trim();
   const tipoUnidad = document.getElementById('tipoUnidad').value;
   const inspector = document.getElementById('inspector').value;
@@ -1813,7 +1828,7 @@ async function submitRecord(){
   if(!tipoUnidad) faltantes.push('Tipo de unidad');
   if(!custodio) faltantes.push('Conductor');
   if(!departamento) faltantes.push(tipoUnidad === 'Contratista' ? 'Contratado para' : 'Departamento');
-  if(!inspector) faltantes.push('Inspector de Control Interno');
+  if(!inspector) faltantes.push('Revisor de Control Interno');
   if(!hora) faltantes.push('Hora');
   if(!fechaInspeccion) faltantes.push('Fecha');
   if(!obsTrabajoArr.length) faltantes.push('Observación en el trabajo (marcar al menos una)');
@@ -1988,7 +2003,7 @@ function renderList(){
         <div class="rec-tag">Trabajo: ${r.obsTrabajo || '—'}</div>
         <div class="rec-tag">Personal: ${r.obsPersonal || '—'}</div>
         <div class="rec-tag">Vehículo: ${r.obsVehiculo || '—'}</div>
-        <div class="rec-meta"><b>Unidad:</b> ${r.unidad || '—'} &nbsp;·&nbsp; <b>Inspector:</b> ${r.inspector || '—'} &nbsp;·&nbsp; <b>Conductor:</b> ${r.custodio} &nbsp;·&nbsp; <b>Depto:</b> ${r.departamento}</div>
+        <div class="rec-meta"><b>Unidad:</b> ${r.unidad || '—'} &nbsp;·&nbsp; <b>Revisor:</b> ${r.inspector || '—'} &nbsp;·&nbsp; <b>Conductor:</b> ${r.custodio} &nbsp;·&nbsp; <b>Depto:</b> ${r.departamento}</div>
         ${r.empresaContratista ? `<div class="rec-meta"><b>Empresa contratista:</b> ${r.empresaContratista}</div>` : ''}
         ${r.direccion ? `<div class="rec-meta"><b>Dirección:</b> ${r.direccion}</div>` : ''}
         ${r.servidores ? `<div class="rec-meta"><b>Servidores presentes:</b> ${r.servidores}</div>` : ''}
